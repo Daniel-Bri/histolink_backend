@@ -1,0 +1,68 @@
+# ═══════════════════════════════════════════════════════════════════════
+# SISTEMA DE GESTIÓN DOCUMENTAL CLÍNICO — UAGRM Grupo #13 INF412-SA
+# requirements.txt
+# Python 3.11+ / 3.12
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── FRAMEWORK WEB ───────────────────────────────────────────────────────
+Django==5.1.4
+djangorestframework==3.15.2
+
+# ── AUTENTICACIÓN JWT (ya en tu BD con token_blacklist) ─────────────────
+djangorestframework-simplejwt==5.3.1
+
+# ── BASE DE DATOS POSTGRESQL ────────────────────────────────────────────
+psycopg2-binary==2.9.9          # driver PostgreSQL para Django
+
+# ── CORS (para el frontend React/Vue) ──────────────────────────────────
+django-cors-headers==4.4.0
+
+# ── VARIABLES DE ENTORNO ────────────────────────────────────────────────
+python-decouple==3.8             # lee el .env limpiamente
+
+# ── CELERY + REDIS (tareas asíncronas para blockchain) ──────────────────
+celery==5.4.0
+redis==5.2.0
+django-celery-beat==2.7.0        # tareas periódicas (ej: expirar emergencias)
+django-celery-results==2.5.1
+
+# ── BLOCKCHAIN — HYPERLEDGER FABRIC ─────────────────────────────────────
+hfc==0.9.0                       # Fabric Python SDK (pip install hfc)
+# Alternativa moderna (recomendada si hfc da problemas):
+# fabric-sdk-py==0.9.0
+
+# ── BLOCKCHAIN — ETHEREUM (fallback/testnet) ────────────────────────────
+web3==7.4.0
+
+# ── CRIPTOGRAFÍA (firmas digitales, SHA-256, claves) ────────────────────
+cryptography==43.0.3             # RSA, EC, firmas digitales, x.509
+pycryptodome==3.21.0             # AES, SHA, utilidades extra
+
+# ── MACHINE LEARNING — MODELO 1: Regresión Logística ────────────────────
+scikit-learn==1.5.2
+numpy==1.26.4
+pandas==2.2.3
+joblib==1.4.2                    # serialización de modelos ML
+
+# ── MACHINE LEARNING — MODELO 2: NLP + Naive Bayes ──────────────────────
+# scikit-learn ya incluye TfidfVectorizer y MultinomialNB
+# nltk es OPCIONAL (solo para stopwords en español avanzadas)
+# Si hay internet: nltk==3.9.1
+# Sin internet: usamos lista de stopwords embebida en el código (ver ml/triaje_nlp.py)
+unidecode==1.3.8                 # normalización de texto en español (quita tildes)
+
+# ── ALMACENAMIENTO DE ARCHIVOS MÉDICOS ──────────────────────────────────
+boto3==1.35.80                   # AWS S3 / compatible con MinIO local
+django-storages==1.14.4          # backend de almacenamiento para Django
+
+# ── UTILIDADES ──────────────────────────────────────────────────────────
+Pillow==11.0.0                   # procesamiento de imágenes (si aplica)
+python-magic==0.4.27             # validación de tipo MIME de archivos subidos
+requests==2.32.3                 # llamadas HTTP internas (si no se usa SDK)
+
+# ── DESARROLLO Y TESTING ────────────────────────────────────────────────
+# Instalar solo en desarrollo: pip install -r requirements-dev.txt
+# pytest==8.3.3
+# pytest-django==4.9.0
+# factory-boy==3.3.1
+# coverage==7.6.4
