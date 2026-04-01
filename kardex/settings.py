@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
 
 
 # Application definition
@@ -42,8 +42,30 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    # Local apps
-    "authentication",
+    # ── GestionDeUsuarios ─────────────────────────────────────────────
+    "GestionDeUsuarios.LoginYAutenticacion",
+    "GestionDeUsuarios.GestionDePersonalDeSalud",
+    "GestionDeUsuarios.RegistroYBusquedaDePacientes",
+    "GestionDeUsuarios.VisualizacionDelExpediente",
+    "GestionDeUsuarios.EdicionDeAntecedentesMedicos",
+    # ── AtencionClinica ───────────────────────────────────────────────
+    "AtencionClinica.AperturaFichaYColaDeAtencion",
+    "AtencionClinica.RegistroDeTriaje",
+    "AtencionClinica.ConsultaMedicaSOAP",
+    "AtencionClinica.EmisionDeRecetaMedica",
+    "AtencionClinica.SolicitudDeEstudios",
+    "AtencionClinica.FirmaDigitalDeConsulta",
+    # ── IA_Blockchain ─────────────────────────────────────────────────
+    "IA_Blockchain.ClasificacionDeUrgenciaConIA",
+    "IA_Blockchain.PrediccionDeRiesgosClinicos",
+    "IA_Blockchain.GestionDeIdentidadBlockchain",
+    "IA_Blockchain.VerificacionDeIntegridadDocumentos",
+    "IA_Blockchain.ConfiguracionDeConsentimiento",
+    # ── SeguridadAvanzadaYAdministracion ─────────────────────────────
+    "SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud",
+    "SeguridadAvanzadaYAdministracion.BreakGlass_Aprobacion",
+    "SeguridadAvanzadaYAdministracion.GestionDePermisosPaciente",
+    "SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS",
 ]
 
 MIDDLEWARE = [

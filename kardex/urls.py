@@ -10,6 +10,6 @@ from django.urls import path, include
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # Autenticación (register, login, logout, profile, change-password, token refresh/verify)
-    path("api/auth/", include("authentication.urls")),
+    # GestionDeUsuarios — CU1: Login y Autenticación
+    path("api/auth/", include("GestionDeUsuarios.LoginYAutenticacion.urls")),
 ]
