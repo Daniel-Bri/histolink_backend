@@ -6,10 +6,12 @@ Todos los endpoints bajo /api/auth/.
 """
 
 from rest_framework import generics, status
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.core.cache import caches
 
 from .serializers import (
     RegisterSerializer,
@@ -18,6 +20,15 @@ from .serializers import (
     ChangePasswordSerializer,
     UserSerializer,
 )
+
+# Ventana de bloqueo por IP tras superar intentos fallidos de login (debe coincidir con el TTL de la caché).
+LOGIN_RATE_LIMIT_WINDOW_SEC = 60
+
+
+def _bump_login_failure_count(cache, cache_key, timeout=LOGIN_RATE_LIMIT_WINDOW_SEC):
+    """Incrementa intentos fallidos de forma atómica (evita condiciones de carrera)."""
+    if not cache.add(cache_key, 1, timeout=timeout):
+        cache.incr(cache_key)
 
 
 # ── Registro ────────────────────────────────────────────────────────────
@@ -68,8 +79,57 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     Response 200:
         { access, refresh, user: { id, username, email, groups, ... } }
+
+    Response 429 (demasiados intentos fallidos desde esta IP):
+        { detail, retry_after }; cabecera Retry-After (segundos).
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        # 1. Obtener la IP del request
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        ip = ip or "unknown"
+
+        # 2. Construir la clave Redis
+        cache_key = f"login_attempts:{ip}"
+        cache = caches["rate_limit"]
+
+        # 3. Consultar el contador
+        attempts = cache.get(cache_key, 0) or 0
+
+        # 4. Si el contador >= 10, retornar Response
+        if attempts >= 10:
+            wait = LOGIN_RATE_LIMIT_WINDOW_SEC
+            return Response(
+                {
+                    "detail": (
+                        "Se superó el número máximo de intentos de inicio de sesión "
+                        "desde esta dirección. Espera antes de volver a intentarlo."
+                    ),
+                    "retry_after": wait,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+                headers={"Retry-After": str(wait)},
+            )
+
+        try:
+            response = super().post(request, *args, **kwargs)
+        except APIException as exc:
+            # SimpleJWT lanza AuthenticationFailed (401) por credenciales inválidas/inactivas.
+            # No incrementar por ValidationError u otros 4xx (p. ej. body mal formado → 400).
+            if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+                _bump_login_failure_count(cache, cache_key)
+            raise
+
+        if response.status_code == status.HTTP_200_OK:
+            cache.delete(cache_key)
+
+        return response
+
 
 
 # ── Logout (Blacklist del Refresh Token) ────────────────────────────────
