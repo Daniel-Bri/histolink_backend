@@ -15,4 +15,6 @@ urlpatterns = [
 
     # GestionDeUsuarios — CU4: Visualización del Expediente (T011)
     path("api/pacientes/", include("GestionDeUsuarios.VisualizacionDelExpediente.urls")),
+
+    #Continuar con las urls
 ]
