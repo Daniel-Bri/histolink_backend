@@ -13,39 +13,14 @@ class ExpedientePacienteView(APIView):
     """
     GET /api/pacientes/{id}/expediente/
 
-    Retorna el expediente clínico completo de un paciente:
-    datos personales, antecedentes médicos, triajes, consultas SOAP,
-    recetas y estudios solicitados.
+    Retorna el expediente clínico completo del paciente:
+    datos personales, antecedentes, triajes, consultas SOAP
+    (con sus recetas + detalles + órdenes de estudio + resultados).
 
     Requiere autenticación JWT (Bearer token).
 
-    Path params:
-        id (int) — ID del paciente.
-
-    Response 200:
-        {
-            "id": ...,
-            "ci": "...",
-            "nombre": "...",
-            "apellido": "...",
-            "fecha_nacimiento": "...",
-            "sexo": "M",
-            "sexo_label": "Masculino",
-            "tipo_sangre": "O+",
-            "telefono": "...",
-            "email": "...",
-            "direccion": "...",
-            "fecha_registro": "...",
-            "activo": true,
-            "antecedentes": { ... },
-            "triajes": [ ... ],
-            "consultas": [ ... ],
-            "recetas": [ ... ],
-            "estudios": [ ... ]
-        }
-
-    Response 404:
-        { "error": "Paciente no encontrado." }
+    Response 200: { datos del paciente + antecedentes + triajes + consultas[] }
+    Response 404: { "error": "Paciente no encontrado." }
     """
 
     permission_classes = (IsAuthenticated,)
@@ -56,18 +31,22 @@ class ExpedientePacienteView(APIView):
                 Paciente.objects
                 .prefetch_related(
                     "antecedentes",
+                    # Triajes y su enfermera
                     "triajes",
                     "triajes__enfermera",
+                    # Consultas y su médico
                     "consultas",
                     "consultas__medico",
+                    "consultas__triaje",
+                    # Recetas dentro de cada consulta
                     "consultas__recetas",
-                    "consultas__recetas__items",
-                    "consultas__estudios",
-                    "recetas",
-                    "recetas__items",
-                    "recetas__medico",
-                    "estudios",
-                    "estudios__solicitante",
+                    "consultas__recetas__medico",
+                    "consultas__recetas__detalles",
+                    # Órdenes de estudio dentro de cada consulta
+                    "consultas__ordenes",
+                    "consultas__ordenes__medico_solicitante",
+                    "consultas__ordenes__resultado",
+                    "consultas__ordenes__resultado__ingresado_por",
                 )
                 .get(pk=id)
             )

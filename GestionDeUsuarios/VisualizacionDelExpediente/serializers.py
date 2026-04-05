@@ -2,120 +2,124 @@
 
 from rest_framework import serializers
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
-from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import AntecedentesMedicos
+from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import Antecedente
 from AtencionClinica.RegistroDeTriaje.models import Triaje
-from AtencionClinica.ConsultaMedicaSOAP.models import ConsultaSOAP
-from AtencionClinica.EmisionDeRecetaMedica.models import Receta, ItemReceta
-from AtencionClinica.SolicitudDeEstudios.models import SolicitudEstudio
+from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
+from AtencionClinica.EmisionDeRecetaMedica.models import Receta, DetalleReceta
+from AtencionClinica.SolicitudDeEstudios.models import OrdenEstudio, ResultadoEstudio
 
 
-class AntecedentesMedicosSerializer(serializers.ModelSerializer):
+class AntecedenteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AntecedentesMedicos
+        model  = Antecedente
         exclude = ("paciente",)
 
 
 class TriajeSerializer(serializers.ModelSerializer):
-    enfermera_nombre = serializers.SerializerMethodField()
-    prioridad_label = serializers.CharField(source="get_prioridad_display", read_only=True)
+    enfermera_nombre  = serializers.SerializerMethodField()
+    nivel_urgencia_label = serializers.CharField(source="get_nivel_urgencia_display", read_only=True)
+    imc              = serializers.FloatField(read_only=True)
+    presion_arterial = serializers.CharField(read_only=True)
 
     class Meta:
-        model = Triaje
+        model  = Triaje
         exclude = ("paciente",)
 
     def get_enfermera_nombre(self, obj):
-        if obj.enfermera:
-            return f"{obj.enfermera.first_name} {obj.enfermera.last_name}".strip() or obj.enfermera.username
-        return None
+        u = obj.enfermera
+        return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
 
 
-class ItemRecetaSerializer(serializers.ModelSerializer):
+class DetalleRecetaSerializer(serializers.ModelSerializer):
+    via_label = serializers.CharField(source="get_via_administracion_display", read_only=True)
+
     class Meta:
-        model = ItemReceta
+        model  = DetalleReceta
         exclude = ("receta",)
 
 
 class RecetaSerializer(serializers.ModelSerializer):
-    items = ItemRecetaSerializer(many=True, read_only=True)
+    detalles      = DetalleRecetaSerializer(many=True, read_only=True)
     medico_nombre = serializers.SerializerMethodField()
+    estado_label  = serializers.CharField(source="get_estado_display", read_only=True)
 
     class Meta:
-        model = Receta
-        exclude = ("paciente",)
+        model  = Receta
+        fields = "__all__"
 
     def get_medico_nombre(self, obj):
-        if obj.medico:
-            return f"{obj.medico.first_name} {obj.medico.last_name}".strip() or obj.medico.username
-        return None
+        u = obj.medico
+        return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
 
 
-class SolicitudEstudioSerializer(serializers.ModelSerializer):
-    solicitante_nombre = serializers.SerializerMethodField()
+class ResultadoEstudioSerializer(serializers.ModelSerializer):
+    ingresado_por_nombre = serializers.SerializerMethodField()
 
     class Meta:
-        model = SolicitudEstudio
-        exclude = ("paciente",)
+        model  = ResultadoEstudio
+        exclude = ("orden",)
+
+    def get_ingresado_por_nombre(self, obj):
+        u = obj.ingresado_por
+        return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
+
+
+class OrdenEstudioSerializer(serializers.ModelSerializer):
+    tipo_label             = serializers.CharField(source="get_tipo_estudio_display", read_only=True)
+    estado_label           = serializers.CharField(source="get_estado_display", read_only=True)
+    solicitante_nombre     = serializers.SerializerMethodField()
+    resultado              = ResultadoEstudioSerializer(read_only=True)
+
+    class Meta:
+        model  = OrdenEstudio
+        exclude = ("consulta",)
 
     def get_solicitante_nombre(self, obj):
-        if obj.solicitante:
-            return f"{obj.solicitante.first_name} {obj.solicitante.last_name}".strip() or obj.solicitante.username
-        return None
+        u = obj.medico_solicitante
+        return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
 
 
-class ConsultaSOAPSerializer(serializers.ModelSerializer):
+class ConsultaSerializer(serializers.ModelSerializer):
     medico_nombre = serializers.SerializerMethodField()
-    recetas = RecetaSerializer(many=True, read_only=True)
-    estudios = SolicitudEstudioSerializer(many=True, read_only=True)
+    estado_label  = serializers.CharField(source="get_estado_display", read_only=True)
+    recetas       = RecetaSerializer(many=True, read_only=True)
+    ordenes       = OrdenEstudioSerializer(many=True, read_only=True)
 
     class Meta:
-        model = ConsultaSOAP
+        model  = Consulta
         exclude = ("paciente",)
 
     def get_medico_nombre(self, obj):
-        if obj.medico:
-            return f"{obj.medico.first_name} {obj.medico.last_name}".strip() or obj.medico.username
-        return None
-
-
-class PacienteSerializer(serializers.ModelSerializer):
-    sexo_label = serializers.CharField(source="get_sexo_display", read_only=True)
-
-    class Meta:
-        model = Paciente
-        fields = "__all__"
+        u = obj.medico
+        return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
 
 
 class ExpedienteSerializer(serializers.ModelSerializer):
     """
-    Serializer completo del expediente clínico de un paciente.
-    Agrupa toda la información clínica en un único objeto.
+    Expediente clínico completo del paciente.
+    Recetas y órdenes están anidadas dentro de cada consulta.
     """
-    sexo_label = serializers.CharField(source="get_sexo_display", read_only=True)
-    antecedentes = AntecedentesMedicosSerializer(read_only=True)
-    triajes = TriajeSerializer(many=True, read_only=True)
-    consultas = ConsultaSOAPSerializer(many=True, read_only=True)
-    recetas = RecetaSerializer(many=True, read_only=True)
-    estudios = SolicitudEstudioSerializer(many=True, read_only=True)
+    sexo_label           = serializers.CharField(source="get_sexo_display", read_only=True)
+    autoidentificacion_label = serializers.CharField(source="get_autoidentificacion_display", read_only=True)
+    tipo_seguro_label    = serializers.CharField(source="get_tipo_seguro_display", read_only=True)
+    antecedentes         = AntecedenteSerializer(read_only=True)
+    triajes              = TriajeSerializer(many=True, read_only=True)
+    consultas            = ConsultaSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Paciente
+        model  = Paciente
         fields = [
             "id",
-            "ci",
-            "nombre",
-            "apellido",
+            "ci", "ci_complemento",
+            "nombres", "apellido_paterno", "apellido_materno",
             "fecha_nacimiento",
-            "sexo",
-            "sexo_label",
-            "tipo_sangre",
-            "telefono",
-            "email",
-            "direccion",
-            "fecha_registro",
-            "activo",
+            "sexo", "sexo_label",
+            "autoidentificacion", "autoidentificacion_label",
+            "telefono", "direccion",
+            "nombre_responsable", "telefono_responsable", "parentesco_responsable",
+            "tipo_seguro", "tipo_seguro_label", "numero_asegurado",
+            "activo", "creado_en",
             "antecedentes",
             "triajes",
             "consultas",
-            "recetas",
-            "estudios",
         ]
