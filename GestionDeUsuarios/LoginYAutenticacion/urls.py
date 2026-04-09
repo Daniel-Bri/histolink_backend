@@ -7,6 +7,7 @@ Incluidos en kardex/urls.py bajo el prefijo 'api/auth/'.
 
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView
 
 from . import views
 
@@ -22,8 +23,14 @@ urlpatterns = [
     # Logout — blacklist del refresh token
     path("logout/", views.LogoutView.as_view(), name="logout"),
 
+    # Token estándar de simplejwt (endpoint puro) 
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+
     # Refresh — obtener nuevo access token usando el refresh token
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
+    # Blacklist — invalidar refresh token
+    path("token/blacklist/", TokenBlacklistView.as_view(), name="token_blacklist"),
 
     # Verify — verificar si un token es válido
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
