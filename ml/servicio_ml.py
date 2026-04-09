@@ -159,8 +159,7 @@ class ServicioML:
         Usa Django ORM — solo disponible cuando Django está activo.
         """
         try:
-            # Import lazy para evitar importar modelos Django en tiempo de módulo
-            from core.models import Triaje  # ajustar 'core' al nombre de tu app
+            from AtencionClinica.RegistroDeTriaje.models import Triaje
             triaje = Triaje.objects.filter(pk=triaje_id).first()
             if triaje and triaje.nivel_urgencia is None:
                 # Solo actualizar si la enfermera no asignó uno manualmente
@@ -223,7 +222,9 @@ class ServicioML:
         Combina datos de: pacientes, antecedentes, triaje (más reciente).
         """
         try:
-            from core.models import Paciente, Antecedente, Triaje
+            from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
+            from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import Antecedente
+            from AtencionClinica.RegistroDeTriaje.models import Triaje
             from datetime import date
 
             paciente = Paciente.objects.select_related("antecedentes").filter(
@@ -250,7 +251,7 @@ class ServicioML:
 
             # Triaje más reciente para signos vitales
             ultimo_triaje = (
-                Triaje.objects.filter(ficha__paciente=paciente)
+                Triaje.objects.filter(paciente=paciente)
                 .order_by("-hora_triaje")
                 .first()
             )
@@ -292,11 +293,11 @@ class ServicioML:
 
     def _contar_consultas_anio(self, paciente_id: int) -> int:
         try:
-            from core.models import Consulta
+            from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
             from datetime import date, timedelta
             hace_un_anio = date.today() - timedelta(days=365)
             return Consulta.objects.filter(
-                ficha__paciente_id=paciente_id,
+                paciente_id=paciente_id,
                 creado_en__date__gte=hace_un_anio
             ).count()
         except Exception:
