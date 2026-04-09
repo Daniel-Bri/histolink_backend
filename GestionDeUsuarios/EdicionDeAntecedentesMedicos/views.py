@@ -15,11 +15,13 @@ from .serializers import AntecedenteSerializer, AntecedenteUpdateSerializer
 
 logger = logging.getLogger("histolink.antecedentes")
 
-# Alias definido en settings.CACHES — apunta a Redis DB1
-_cache = caches["antecedentes"]
-
 # TTL de 15 minutos para datos de antecedentes
 CACHE_TTL = 60 * 15
+
+
+def _get_cache():
+    """Acceso lazy al cache — se resuelve en runtime, no en import time."""
+    return caches["antecedentes"]
 
 
 def _cache_key(paciente_id: int) -> str:
@@ -44,8 +46,9 @@ class AntecedenteView(APIView):
     # ── GET ──────────────────────────────────────────────────────────────
 
     def get(self, request, paciente_id):
+        cache = _get_cache()
         cache_key = _cache_key(paciente_id)
-        cached = _cache.get(cache_key)
+        cached = cache.get(cache_key)
 
         if cached is not None:
             logger.debug("Cache HIT antecedente paciente_id=%s", paciente_id)
@@ -64,7 +67,7 @@ class AntecedenteView(APIView):
         antecedente, _ = Antecedente.objects.get_or_create(paciente=paciente)
         data = AntecedenteSerializer(antecedente).data
 
-        _cache.set(cache_key, json.dumps(data), timeout=CACHE_TTL)
+        cache.set(cache_key, json.dumps(data), timeout=CACHE_TTL)
 
         return Response(data, status=status.HTTP_200_OK)
 
@@ -95,7 +98,7 @@ class AntecedenteView(APIView):
 
         # Invalidar caché tras escritura
         cache_key = _cache_key(paciente_id)
-        _cache.delete(cache_key)
+        _get_cache().delete(cache_key)
         logger.debug("Cache invalidado antecedente paciente_id=%s", paciente_id)
 
         return Response(

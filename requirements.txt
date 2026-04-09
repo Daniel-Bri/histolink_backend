@@ -66,3 +66,4 @@ requests==2.32.3                 # llamadas HTTP internas (si no se usa SDK)
 # pytest-django==4.9.0
 # factory-boy==3.3.1
 # coverage==7.6.4
+gunicorn==21.2.0

@@ -10,15 +10,24 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from logging import config
 from pathlib import Path
-from decouple import config, Csv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("SECRET_KEY")
-DEBUG = config("DEBUG", default=False, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml")
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get("DEBUG", "True") == "True"
+
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2").split(",")
 
 
 # Application definition
@@ -102,7 +111,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "histolink",      # Nombre de tu base de datos
         "USER": "postgres",       # Tu usuario de postgres
-        "PASSWORD": "alejandra",   # Tu contraseña
+        "PASSWORD": "12345678",   # Tu contraseña
         "HOST": "localhost",
         "PORT": "5432",
     }
@@ -144,11 +153,77 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ── CACHÉ — Redis con fallback a memoria ─────────────────────────────────────
+# Si REDIS_URL está definido (producción) usa Redis; si no, usa memoria local.
+_REDIS_URL = os.environ.get("REDIS_URL", "")
+if _REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_REDIS_URL}/0",
+        },
+        "antecedentes": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_REDIS_URL}/1",
+            "TIMEOUT": 900,
+        },
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        },
+        "antecedentes": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "TIMEOUT": 900,
+        },
+    }
+
+# ── LOGGING — Auditoría ───────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "auditoria": {
+            "format": (
+                "%(asctime)s [AUDITORIA] user=%(user)s method=%(method)s "
+                "path=%(path)s status=%(status)s dur=%(duracion_ms)sms body=%(body)s"
+            ),
+        },
+        "simple": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "auditoria_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "auditoria",
+        },
+    },
+    "loggers": {
+        "histolink.auditoria": {
+            "handlers": ["auditoria_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "histolink.antecedentes": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
 
 # DRF configurations
 REST_FRAMEWORK = {
@@ -161,7 +236,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta
