@@ -100,11 +100,11 @@ WSGI_APPLICATION = "kardex.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="histolink"),
-        "USER": config("DB_USER", default="postgres"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
+        "NAME": "histolink",      # Nombre de tu base de datos
+        "USER": "postgres",       # Tu usuario de postgres
+        "PASSWORD": "12345678",   # Tu contraseña
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
@@ -149,63 +149,6 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# ── CACHÉ — Redis ────────────────────────────────────────────────────────────
-# DB0: reservado para uso general / sesiones
-# DB1: antecedentes médicos (T008)
-_REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379")
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"{_REDIS_URL}/0",
-    },
-    "antecedentes": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"{_REDIS_URL}/1",
-        "TIMEOUT": 900,
-    },
-}
-
-# ── LOGGING — Auditoría ───────────────────────────────────────────────────────
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "auditoria": {
-            "format": (
-                "%(asctime)s [AUDITORIA] user=%(user)s method=%(method)s "
-                "path=%(path)s status=%(status)s dur=%(duracion_ms)sms body=%(body)s"
-            ),
-        },
-        "simple": {
-            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
-        },
-        "auditoria_console": {
-            "class": "logging.StreamHandler",
-            "formatter": "auditoria",
-        },
-    },
-    "loggers": {
-        # Auditoría de escrituras (middleware T008)
-        "histolink.auditoria": {
-            "handlers": ["auditoria_console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        # Logger interno de la app antecedentes
-        "histolink.antecedentes": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-    },
-}
 
 # DRF configurations
 REST_FRAMEWORK = {

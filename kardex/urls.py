@@ -18,4 +18,5 @@ urlpatterns = [
 
     # GestionDeUsuarios — CU5: Edición de Antecedentes Médicos (T008)
     path("api/pacientes/", include("GestionDeUsuarios.EdicionDeAntecedentesMedicos.urls")),
+    path("api/personal/", include("GestionDeUsuarios.GestionDePersonalDeSalud.urls")),
 ]
