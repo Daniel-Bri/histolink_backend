@@ -160,6 +160,71 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ── CACHÉ — Redis con fallback a memoria ─────────────────────────────────────
+# Si REDIS_URL está definido (producción) usa Redis; si no, usa memoria local.
+_REDIS_URL = os.environ.get("REDIS_URL", "")
+if _REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_REDIS_URL}/0",
+        },
+        "antecedentes": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_REDIS_URL}/1",
+            "TIMEOUT": 900,
+        },
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        },
+        "antecedentes": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "TIMEOUT": 900,
+        },
+    }
+
+# ── LOGGING — Auditoría ───────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "auditoria": {
+            "format": (
+                "%(asctime)s [AUDITORIA] user=%(user)s method=%(method)s "
+                "path=%(path)s status=%(status)s dur=%(duracion_ms)sms body=%(body)s"
+            ),
+        },
+        "simple": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "auditoria_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "auditoria",
+        },
+    },
+    "loggers": {
+        "histolink.auditoria": {
+            "handlers": ["auditoria_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "histolink.antecedentes": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
 # DRF configurations
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -171,7 +236,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta
