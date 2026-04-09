@@ -1,5 +1,18 @@
+# Entornos virtuales
 venv/
 .venv/
+env/
+
+# Python
 __pycache__/
 *.pyc
+
+# Variables de entorno (credenciales)
 .env
+
+# Base de datos (si usas local)
+*.sqlite3
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db

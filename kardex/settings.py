@@ -78,6 +78,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # T008 — Auditoría de operaciones de escritura
+    "kardex.middleware.AuditoriaMiddleware",
 ]
 
 ROOT_URLCONF = "kardex.urls"
@@ -167,8 +169,8 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS — permitir todas las origenes en desarrollo
-CORS_ALLOW_ALL_ORIGINS = True  # En producción, usar CORS_ALLOWED_ORIGINS con dominios específicos
+# CORS
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta
