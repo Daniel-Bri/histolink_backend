@@ -11,21 +11,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", default=False, cast=bool)
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
 
 # Application definition
@@ -77,6 +70,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # T008 — Auditoría de operaciones de escritura
+    "kardex.middleware.AuditoriaMiddleware",
 ]
 
 ROOT_URLCONF = "kardex.urls"
@@ -105,11 +100,11 @@ WSGI_APPLICATION = "kardex.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "histolink",      # Nombre de tu base de datos
-        "USER": "postgres",       # Tu usuario de postgres
-        "PASSWORD": "12345678",   # Tu contraseña
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": config("DB_NAME", default="histolink"),
+        "USER": config("DB_USER", default="postgres"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default="5432"),
     }
 }
 
@@ -155,6 +150,63 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ── CACHÉ — Redis ────────────────────────────────────────────────────────────
+# DB0: reservado para uso general / sesiones
+# DB1: antecedentes médicos (T008)
+_REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"{_REDIS_URL}/0",
+    },
+    "antecedentes": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"{_REDIS_URL}/1",
+        "TIMEOUT": 900,
+    },
+}
+
+# ── LOGGING — Auditoría ───────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "auditoria": {
+            "format": (
+                "%(asctime)s [AUDITORIA] user=%(user)s method=%(method)s "
+                "path=%(path)s status=%(status)s dur=%(duracion_ms)sms body=%(body)s"
+            ),
+        },
+        "simple": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "auditoria_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "auditoria",
+        },
+    },
+    "loggers": {
+        # Auditoría de escrituras (middleware T008)
+        "histolink.auditoria": {
+            "handlers": ["auditoria_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Logger interno de la app antecedentes
+        "histolink.antecedentes": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
 # DRF configurations
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -165,8 +217,8 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS — permitir todas las origenes en desarrollo
-CORS_ALLOW_ALL_ORIGINS = True  # En producción, usar CORS_ALLOWED_ORIGINS con dominios específicos
+# CORS
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta

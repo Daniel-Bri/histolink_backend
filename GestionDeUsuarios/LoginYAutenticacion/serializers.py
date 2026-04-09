@@ -5,26 +5,22 @@ Serializers para el sistema de autenticación de Histolink.
 Usa auth_user de Django + JWT de simplejwt.
 """
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-# ── Serializer de Grupo ─────────────────────────────────────────────────
-
-class GroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Group
-        fields = ("id", "name")
-
-
 # ── Serializer de Usuario (lectura) ─────────────────────────────────────
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializa auth_user para perfil y respuestas."""
-    groups = GroupSerializer(many=True, read_only=True)
+    """
+    Serializa auth_user para perfil y respuestas de registro.
+    groups se devuelve como lista de strings (nombres de rol),
+    igual que en la respuesta de login — formato consistente para todos los clientes.
+    """
+    groups = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -41,6 +37,9 @@ class UserSerializer(serializers.ModelSerializer):
             "groups",
         )
         read_only_fields = fields
+
+    def get_groups(self, obj):
+        return list(obj.groups.values_list("name", flat=True))
 
 
 # ── Registro ────────────────────────────────────────────────────────────
