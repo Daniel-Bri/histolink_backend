@@ -184,6 +184,10 @@ else:
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "TIMEOUT": 900,
         },
+        "rate_limit": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "rate-limit",
+        },
     }
 
 # ── LOGGING — Auditoría ───────────────────────────────────────────────────────
