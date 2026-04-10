@@ -1,16 +1,8 @@
 from rest_framework import serializers
-from .models import Paciente, AntecedentesMedicos
-
-
-class AntecedentesMedicosSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AntecedentesMedicos
-        fields = '__all__'
+from .models import Paciente
 
 
 class PacienteSerializer(serializers.ModelSerializer):
-    antecedentes = AntecedentesMedicosSerializer(read_only=True)
-
     class Meta:
         model = Paciente
         fields = '__all__'

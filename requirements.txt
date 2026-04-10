@@ -27,7 +27,7 @@ django-celery-beat==2.7.0        # tareas periódicas (ej: expirar emergencias)
 django-celery-results==2.5.1
 
 # ── BLOCKCHAIN — HYPERLEDGER FABRIC ─────────────────────────────────────
-# hfc==0.9.0                     # Fabric Python SDK — incompatible con Python 3.9+, no implementado aún
+#hfc==0.9.0                       # Fabric Python SDK (pip install hfc)
 # Alternativa moderna (recomendada si hfc da problemas):
 # fabric-sdk-py==0.9.0
 
@@ -66,3 +66,4 @@ requests==2.32.3                 # llamadas HTTP internas (si no se usa SDK)
 # pytest-django==4.9.0
 # factory-boy==3.3.1
 # coverage==7.6.4
+gunicorn==21.2.0
