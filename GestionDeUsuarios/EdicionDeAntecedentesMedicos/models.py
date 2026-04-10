@@ -3,7 +3,8 @@
 from django.conf import settings
 from django.db import models
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Antecedente(models.Model):
     """
@@ -108,3 +109,9 @@ class Antecedente(models.Model):
 
     def __str__(self):
         return f"Antecedentes de {self.paciente}"
+    
+# Signal: crea antecedentes automáticamente al registrar un paciente
+@receiver(post_save, sender=Paciente)
+def crear_antecedentes(sender, instance, created, **kwargs):
+    if created:
+        Antecedente.objects.get_or_create(paciente=instance)
