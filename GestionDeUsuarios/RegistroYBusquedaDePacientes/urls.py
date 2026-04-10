@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import PacienteViewSet
 
 app_name = "RegistroYBusquedaDePacientes"
 
+router = DefaultRouter()
+router.register(r'pacientes', PacienteViewSet, basename='paciente')
+
 urlpatterns = [
-    # Endpoints de CU3 - Registro y Búsqueda de Pacientes — pendientes de implementación.
+    path('', include(router.urls)),
 ]

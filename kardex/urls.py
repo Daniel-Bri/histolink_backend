@@ -12,4 +12,6 @@ urlpatterns = [
 
     # GestionDeUsuarios — CU1: Login y Autenticación
     path("api/auth/", include("GestionDeUsuarios.LoginYAutenticacion.urls")),
+    # GestionDeUsuarios — CU3: Registro y Búsqueda de Pacientes     
+    path("api/pacientes/", include("GestionDeUsuarios.RegistroYBusquedaDePacientes.urls")),
 ]
