@@ -3,11 +3,13 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import PersonalSalud
 from .serializers import PersonalSaludSerializer
+from GestionDeUsuarios.LoginYAutenticacion.permissions import EsAdminODirector
 
 
 class PersonalSaludViewSet(ModelViewSet):
     serializer_class = PersonalSaludSerializer
-    permission_classes = [IsAuthenticated]
+    # Gestión de personal: solo Administrativo y Director
+    permission_classes = [EsAdminODirector]
 
     def get_queryset(self):
         queryset = PersonalSalud.objects.select_related("user", "especialidad")

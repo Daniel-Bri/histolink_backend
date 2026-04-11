@@ -38,13 +38,25 @@ class EsPaciente(BasePermission):
         )
 
 
-# 🔹 Opcional (muy útil)
 class EsAdminODirector(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated and
-            (
-                request.user.groups.filter(name='Administrativo').exists() or
-                request.user.groups.filter(name='Director').exists()
-            )
+            request.user.groups.filter(name__in=['Administrativo', 'Director']).exists()
+        )
+
+
+class EsMedicoOEnfermera(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated and
+            request.user.groups.filter(name__in=['Médico', 'Enfermera']).exists()
+        )
+
+
+class EsMedicoEnfermeroOAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated and
+            request.user.groups.filter(name__in=['Médico', 'Enfermera', 'Administrativo']).exists()
         )
