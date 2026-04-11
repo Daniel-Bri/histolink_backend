@@ -160,19 +160,29 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ── CACHÉ — Redis con fallback a memoria ─────────────────────────────────────
-# Si REDIS_URL está definido (producción) usa Redis; si no, usa memoria local.
+# ── CACHÉ — Redis DB0 default; DB1 especialidades (T009); DB2 rate limit; DB3 antecedentes
+# Si REDIS_URL está definido (producción), las rutas usan ese host/puerto base.
 _REDIS_URL = os.environ.get("REDIS_URL", "")
 if _REDIS_URL:
+    _base = _REDIS_URL.rstrip("/")
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"{_REDIS_URL}/0",
+            "LOCATION": f"{_base}/0",
         },
         "antecedentes": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"{_REDIS_URL}/1",
+            "LOCATION": f"{_base}/3",
             "TIMEOUT": 900,
+        },
+        "rate_limit": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_base}/2",
+        },
+        "especialidad_cache": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"{_base}/1",
+            "TIMEOUT": 3600,
         },
     }
 else:
@@ -185,8 +195,13 @@ else:
             "TIMEOUT": 900,
         },
         "rate_limit": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "rate-limit",
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/2",
+        },
+        "especialidad_cache": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",
+            "TIMEOUT": 3600,
         },
     }
 
