@@ -10,9 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from logging import config
 from pathlib import Path
 import os
+from decouple import Csv, config
+
+
+def _env_bool(value: str, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +28,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml")
+SECRET_KEY = config(
+    "SECRET_KEY",
+    default="django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = _env_bool(config("DEBUG", default="True"), default=True)
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2").split(",")
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1,10.0.2.2",
+    cast=Csv(),
+)
 
 
 # Application definition
@@ -108,12 +121,12 @@ WSGI_APPLICATION = "kardex.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "histolink",      # Nombre de tu base de datos
-        "USER": "postgres",       # Tu usuario de postgres
-        "PASSWORD": "Tomy2003",   # Tu contraseña
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": config("DB_ENGINE", default="django.db.backends.postgresql"),
+        "NAME": config("DB_NAME", default="histolink"),
+        "USER": config("DB_USER", default="postgres"),
+        "PASSWORD": config("DB_PASSWORD", default="alejandra"),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default="5432"),
     }
 }
 
@@ -162,7 +175,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── CACHÉ — Redis con fallback a memoria ─────────────────────────────────────
 # Si REDIS_URL está definido (producción) usa Redis; si no, usa memoria local.
-_REDIS_URL = os.environ.get("REDIS_URL", "")
+_REDIS_URL = config("REDIS_URL", default="")
 if _REDIS_URL:
     CACHES = {
         "default": {
@@ -240,7 +253,10 @@ REST_FRAMEWORK = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = _env_bool(
+    config("CORS_ALLOW_ALL_ORIGINS", default="True"),
+    default=True,
+)
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta
