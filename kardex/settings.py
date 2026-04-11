@@ -184,6 +184,10 @@ else:
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "TIMEOUT": 900,
         },
+        "rate_limit": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "rate-limit",
+        },
     }
 
 # ── LOGGING — Auditoría ───────────────────────────────────────────────────────
@@ -236,7 +240,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta
