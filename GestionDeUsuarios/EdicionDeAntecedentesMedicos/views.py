@@ -6,6 +6,7 @@ import logging
 from django.core.cache import caches
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from GestionDeUsuarios.LoginYAutenticacion.permissions import EsMedicoOEnfermera
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -41,7 +42,12 @@ class AntecedenteView(APIView):
         Invalida la entrada de caché tras guardar.
     """
 
-    permission_classes = (IsAuthenticated,)
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            # Solo Médico y Enfermera pueden editar antecedentes
+            return [EsMedicoOEnfermera()]
+        # Lectura: cualquier personal autenticado
+        return [IsAuthenticated()]
 
     # ── GET ──────────────────────────────────────────────────────────────
 
