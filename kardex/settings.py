@@ -111,7 +111,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "histolink",      # Nombre de tu base de datos
         "USER": "postgres",       # Tu usuario de postgres
-        "PASSWORD": "Tomy2003",   # Tu contraseña
+        "PASSWORD": "123456",   # Tu contraseña
         "HOST": "localhost",
         "PORT": "5432",
     }

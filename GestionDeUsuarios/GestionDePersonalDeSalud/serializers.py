@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
 
 from .models import Especialidad, PersonalSalud
@@ -7,9 +8,33 @@ User = get_user_model()
 
 
 class EspecialidadSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(
+        max_length=120,
+        required=True,
+        validators=[
+            UniqueValidator(
+                queryset=Especialidad.objects.all(),
+                message="Ya existe una especialidad con ese nombre.",
+            )
+        ],
+    )
+
     class Meta:
         model = Especialidad
         fields = ["id", "nombre"]
+
+    def validate_nombre(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("El nombre es obligatorio.")
+
+        import re
+
+        if not re.match(r"^[a-zA-ZáéíóúñÑ\s]+$", value):
+            raise serializers.ValidationError(
+                "El nombre solo puede contener letras y espacios."
+            )
+        return value
 
 
 class PersonalSaludSerializer(serializers.ModelSerializer):
@@ -36,6 +61,15 @@ class PersonalSaludSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "is_active", "created_at", "updated_at"]
 
     def validate_item_min_salud(self, value):
+        import re
+
+        if not value:
+            raise serializers.ValidationError("item_min_salud es obligatorio.")
+        if not re.match(r"^[A-Z]{3}-\d{3}$", value):
+            raise serializers.ValidationError(
+                "item_min_salud debe tener formato AAA-123."
+            )
+
         queryset = PersonalSalud.objects.filter(item_min_salud=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)

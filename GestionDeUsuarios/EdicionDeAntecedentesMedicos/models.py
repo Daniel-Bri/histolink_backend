@@ -109,7 +109,44 @@ class Antecedente(models.Model):
 
     def __str__(self):
         return f"Antecedentes de {self.paciente}"
-    
+
+
+class RegistroAntecedente(models.Model):
+    """
+    Entrada puntual de antecedente (familiar, alergia, etc.).
+    Complementa el registro agregado Antecedente (OneToOne) sin reemplazarlo.
+    """
+
+    TIPO_CHOICES = [
+        ("familiar", "Familiar"),
+        ("personal", "Personal"),
+        ("alergia", "Alergia"),
+        ("medicamento", "Medicamento"),
+        ("quirurgico", "Quirúrgico"),
+    ]
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name="registros_antecedentes",
+        verbose_name="Paciente",
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name="Tipo")
+    descripcion = models.CharField(max_length=500, verbose_name="Descripción")
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de registro",
+    )
+
+    class Meta:
+        verbose_name = "Registro de antecedente"
+        verbose_name_plural = "Registros de antecedentes"
+        ordering = ["-fecha_registro"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.paciente_id}"
+
+
 # Signal: crea antecedentes automáticamente al registrar un paciente
 @receiver(post_save, sender=Paciente)
 def crear_antecedentes(sender, instance, created, **kwargs):
