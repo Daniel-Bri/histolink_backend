@@ -3,7 +3,10 @@ URL configuration for Histolink project.
 Rutas principales del sistema clínico.
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
+
+from GestionDeUsuarios.GestionDePersonalDeSalud.urls import especialidades_urlpatterns
+from GestionDeUsuarios.GestionDePersonalDeSalud.views import usuarios_sin_perfil
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -21,4 +24,8 @@ urlpatterns = [
     path("api/antecedentes/", include("GestionDeUsuarios.EdicionDeAntecedentesMedicos.urls")),
 
     path("api/personal/", include("GestionDeUsuarios.GestionDePersonalDeSalud.urls")),
+
+    path("api/especialidades/", include(especialidades_urlpatterns)),
+
+    path("api/usuarios-sin-perfil/", usuarios_sin_perfil),
 ]
