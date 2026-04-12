@@ -60,6 +60,7 @@ class PacienteSerializer(serializers.ModelSerializer):
             "ci_complemento",
             "nombre",
             "apellido",
+            "apellido_materno",
             "fecha_nacimiento",
             "genero",
             "email",
