@@ -122,11 +122,11 @@ WSGI_APPLICATION = "kardex.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "histolink",      # Nombre de tu base de datos
-        "USER": "postgres",       # Tu usuario de postgres
-        "PASSWORD": "12345678",   # Tu contraseña
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": os.environ.get("PGDATABASE", "histolink"),
+        "USER": os.environ.get("PGUSER", "postgres"),
+        "PASSWORD": os.environ.get("PGPASSWORD", "12345678"),
+        "HOST": os.environ.get("PGHOST", "localhost"),
+        "PORT": os.environ.get("PGPORT", "5432"),
     }
 }
 
