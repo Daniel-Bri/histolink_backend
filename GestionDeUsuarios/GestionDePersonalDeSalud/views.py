@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from GestionDeUsuarios.LoginYAutenticacion.permissions import EsAdminODirector
 from .models import Especialidad, PersonalSalud
 from .permissions import IsStaffOrAdminRole
 from .serializers import EspecialidadSerializer, PersonalSaludSerializer, UserSerializer
