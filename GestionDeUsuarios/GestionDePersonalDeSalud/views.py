@@ -3,12 +3,19 @@ from django.core.cache import caches
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsAdminODirector
 from .models import Especialidad, PersonalSalud
 from .permissions import IsStaffOrAdminRole
-from .serializers import EspecialidadSerializer, PersonalSaludSerializer, UserSerializer
+from .serializers import (
+    EspecialidadSerializer,
+    PersonalSaludCreateSerializer,
+    PersonalSaludSerializer,
+    PersonalSaludUpdateSerializer,
+    UserSerializer,
+)
 
 ESPECIALIDAD_LIST_CACHE_KEY = "especialidades:list:v1"
 ESPECIALIDAD_CACHE_TIMEOUT = 3600
@@ -30,19 +37,34 @@ def usuarios_sin_perfil(request):
 
 
 class PersonalSaludViewSet(ModelViewSet):
-    serializer_class = PersonalSaludSerializer
-    # Gestión de personal: solo Administrativo y Director
     permission_classes = [EsAdminODirector]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return PersonalSaludCreateSerializer
+        if self.action in ("update", "partial_update"):
+            return PersonalSaludUpdateSerializer
+        return PersonalSaludSerializer
 
     def get_queryset(self):
         queryset = PersonalSalud.objects.select_related("user", "especialidad")
         if self.action == "list":
-            queryset = queryset.filter(is_active=True)
+            incluir_inactivos = self.request.query_params.get("incluir_inactivos", "false").lower() == "true"
+            if not incluir_inactivos:
+                queryset = queryset.filter(is_active=True)
         return queryset
 
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
+
+    @action(detail=True, methods=["post"], url_path="reactivar")
+    def reactivar(self, request, pk=None):
+        instance = self.get_object()
+        instance.is_active = True
+        instance.save(update_fields=["is_active", "updated_at"])
+        serializer = PersonalSaludSerializer(instance)
+        return Response(serializer.data)
 
 
 class EspecialidadViewSet(ModelViewSet):
@@ -55,14 +77,25 @@ class EspecialidadViewSet(ModelViewSet):
         return [IsAuthenticated(), IsStaffOrAdminRole()]
 
     def list(self, request, *args, **kwargs):
-        cache = caches["especialidad_cache"]
-        cached = cache.get(ESPECIALIDAD_LIST_CACHE_KEY)
-        if cached is not None:
-            return Response(cached)
+        try:
+            cache = caches["especialidad_cache"]
+            cached = cache.get(ESPECIALIDAD_LIST_CACHE_KEY)
+            if cached is not None:
+                return Response(cached)
+        except Exception:
+            cache = None
+            cached = None
+
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
-        cache.set(ESPECIALIDAD_LIST_CACHE_KEY, data, timeout=ESPECIALIDAD_CACHE_TIMEOUT)
+
+        if cache is not None:
+            try:
+                cache.set(ESPECIALIDAD_LIST_CACHE_KEY, data, timeout=ESPECIALIDAD_CACHE_TIMEOUT)
+            except Exception:
+                pass
+
         return Response(data)
 
     def perform_create(self, serializer):

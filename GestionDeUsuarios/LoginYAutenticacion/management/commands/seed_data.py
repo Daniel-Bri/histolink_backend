@@ -17,6 +17,7 @@ from datetime import date, timedelta
 
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import Antecedente
+from GestionDeUsuarios.GestionDePersonalDeSalud.models import Especialidad, PersonalSalud
 from AtencionClinica.RegistroDeTriaje.models import Triaje
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 
@@ -25,10 +26,57 @@ from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 # Datos de prueba
 # ---------------------------------------------------------------------------
 
+ESPECIALIDADES_SEED = [
+    "Medicina General",
+    "Medicina Interna",
+    "Cardiología",
+    "Pediatría",
+    "Ginecología y Obstetricia",
+    "Cirugía General",
+    "Neurología",
+    "Traumatología y Ortopedia",
+    "Oftalmología",
+    "Dermatología",
+    "Psiquiatría",
+    "Radiología e Imagen",
+    "Anestesiología",
+    "Urgencias y Emergencias",
+    "Oncología",
+    "Nefrología",
+    "Neumología",
+    "Endocrinología",
+    "Gastroenterología",
+    "Reumatología",
+]
+
 USUARIOS_SEED = [
     {"username": "medico_test",    "password": "12345678", "first_name": "Carlos",   "last_name": "Mamani",   "email": "medico@gmail.test",    "rol": "Médico"},
     {"username": "enfermera_test", "password": "12345678", "first_name": "Ana",      "last_name": "Flores",   "email": "enfermera@gmail.test", "rol": "Enfermera"},
     {"username": "admin_test",     "password": "12345678", "first_name": "Roberto",  "last_name": "Vargas",   "email": "admin@gmail.test",     "rol": "Administrativo"},
+]
+
+PERSONAL_SEED = [
+    {
+        "username": "medico_test",
+        "item_min_salud": "MED-001",
+        "rol": PersonalSalud.ROL_MEDICO,
+        "especialidad_nombre": "Medicina General",
+        "telefono": "71234567",
+    },
+    {
+        "username": "enfermera_test",
+        "item_min_salud": "ENF-001",
+        "rol": PersonalSalud.ROL_ENFERMERA,
+        "especialidad_nombre": None,
+        "telefono": "76543210",
+    },
+    {
+        "username": "admin_test",
+        "item_min_salud": "ADM-001",
+        "rol": PersonalSalud.ROL_ADMIN,
+        "especialidad_nombre": None,
+        "telefono": "69876543",
+    },
 ]
 
 PACIENTES_SEED = [
@@ -243,10 +291,12 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.MIGRATE_HEADING("\n=== Seed de datos Histolink ===\n"))
 
-        usuarios = self._crear_usuarios()
-        medico   = usuarios.get("medico_test")
+        self._crear_especialidades()
+        usuarios  = self._crear_usuarios()
+        medico    = usuarios.get("medico_test")
         enfermera = usuarios.get("enfermera_test")
 
+        self._crear_personal(usuarios)
         self._crear_pacientes(medico, enfermera)
 
         self.stdout.write(self.style.SUCCESS("\n✓ Seed completado exitosamente.\n"))
@@ -265,6 +315,52 @@ class Command(BaseCommand):
         usernames = [u["username"] for u in USUARIOS_SEED]
         u_eliminados, _ = User.objects.filter(username__in=usernames).delete()
         self.stdout.write(f"  Usuarios eliminados: {u_eliminados}")
+
+        e_eliminados, _ = Especialidad.objects.filter(nombre__in=ESPECIALIDADES_SEED).delete()
+        self.stdout.write(f"  Especialidades eliminadas: {e_eliminados}")
+
+    # ------------------------------------------------------------------
+    def _crear_especialidades(self):
+        self.stdout.write(self.style.MIGRATE_HEADING("Creando especialidades..."))
+        creadas = 0
+        for nombre in ESPECIALIDADES_SEED:
+            _, created = Especialidad.objects.get_or_create(nombre=nombre)
+            if created:
+                creadas += 1
+        # Invalidar caché para que el API devuelva la lista actualizada
+        try:
+            from django.core.cache import caches
+            caches["especialidad_cache"].delete("especialidades:list:v1")
+            self.stdout.write("  · Caché de especialidades invalidado")
+        except Exception:
+            pass
+        self.stdout.write(self.style.SUCCESS(f"  ✓ {creadas} especialidades nuevas  ({len(ESPECIALIDADES_SEED)} en total)"))
+
+    # ------------------------------------------------------------------
+    def _crear_personal(self, usuarios: dict):
+        self.stdout.write(self.style.MIGRATE_HEADING("\nCreando perfiles de personal de salud..."))
+        for datos in PERSONAL_SEED:
+            user = usuarios.get(datos["username"])
+            if not user:
+                self.stdout.write(self.style.WARNING(f"  · Usuario '{datos['username']}' no encontrado, omitido."))
+                continue
+
+            if PersonalSalud.objects.filter(user=user).exists():
+                self.stdout.write(f"  · Ya existe perfil para: {user.username}")
+                continue
+
+            especialidad = None
+            if datos["especialidad_nombre"]:
+                especialidad = Especialidad.objects.filter(nombre=datos["especialidad_nombre"]).first()
+
+            PersonalSalud.objects.create(
+                user=user,
+                item_min_salud=datos["item_min_salud"],
+                rol=datos["rol"],
+                especialidad=especialidad,
+                telefono=datos.get("telefono"),
+            )
+            self.stdout.write(self.style.SUCCESS(f"  ✓ Personal: {user.get_full_name()} ({datos['rol']})"))
 
     # ------------------------------------------------------------------
     def _crear_usuarios(self):
