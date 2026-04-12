@@ -1,15 +1,52 @@
-from django.contrib.auth import get_user_model
+import re
+
+from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from .models import Especialidad, PersonalSalud
 
-User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "first_name", "last_name", "email"]
 
 
 class EspecialidadSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(max_length=120, required=True)
+
     class Meta:
         model = Especialidad
         fields = ["id", "nombre"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = Especialidad.objects.all()
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        self.fields["nombre"].validators = [
+            v
+            for v in self.fields["nombre"].validators
+            if not isinstance(v, UniqueValidator)
+        ]
+        self.fields["nombre"].validators.append(
+            UniqueValidator(
+                queryset=qs,
+                message="Ya existe una especialidad con ese nombre.",
+            )
+        )
+
+    def validate_nombre(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("El nombre es obligatorio.")
+
+        if not re.match(r"^[a-zA-ZáéíóúñÑ\s]+$", value):
+            raise serializers.ValidationError(
+                "El nombre solo puede contener letras y espacios."
+            )
+        return value
 
 
 class PersonalSaludSerializer(serializers.ModelSerializer):
@@ -36,6 +73,13 @@ class PersonalSaludSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "is_active", "created_at", "updated_at"]
 
     def validate_item_min_salud(self, value):
+        if not value:
+            raise serializers.ValidationError("item_min_salud es obligatorio.")
+        if not re.match(r"^[A-Z]{3}-\d{3}$", value):
+            raise serializers.ValidationError(
+                "item_min_salud debe tener formato AAA-123."
+            )
+
         queryset = PersonalSalud.objects.filter(item_min_salud=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)

@@ -1,7 +1,10 @@
 # CU5 - Edición de Antecedentes Médicos
 
 from rest_framework import serializers
-from .models import Antecedente
+
+from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
+
+from .models import Antecedente, RegistroAntecedente
 
 
 class AntecedenteSerializer(serializers.ModelSerializer):
@@ -73,3 +76,31 @@ class AntecedenteUpdateSerializer(serializers.ModelSerializer):
         instance.ultima_actualizacion_por = usuario
         instance.save()
         return instance
+
+
+class RegistroAntecedenteSerializer(serializers.ModelSerializer):
+    """
+    Alta de un registro puntual de antecedente (T010).
+    fecha_registro lo asigna el modelo (auto_now_add); no se envía en POST.
+    """
+
+    paciente = serializers.PrimaryKeyRelatedField(
+        queryset=Paciente.objects.all(),
+        required=True,
+    )
+    tipo = serializers.ChoiceField(
+        choices=RegistroAntecedente.TIPO_CHOICES,
+        required=True,
+    )
+    descripcion = serializers.CharField(max_length=500, required=True)
+
+    class Meta:
+        model = RegistroAntecedente
+        fields = ["id", "paciente", "tipo", "descripcion", "fecha_registro"]
+        read_only_fields = ["id", "fecha_registro"]
+
+    def validate_descripcion(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("La descripción es obligatoria.")
+        return value

@@ -1,0 +1,107 @@
+[
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 1,
+    "fields": {
+      "nombre": "Anestesiología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 2,
+    "fields": {
+      "nombre": "Cardiología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 3,
+    "fields": {
+      "nombre": "Dermatología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 4,
+    "fields": {
+      "nombre": "Enfermería General"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 5,
+    "fields": {
+      "nombre": "Gastroenterología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 6,
+    "fields": {
+      "nombre": "Ginecología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 7,
+    "fields": {
+      "nombre": "Medicina General"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 8,
+    "fields": {
+      "nombre": "Neurología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 9,
+    "fields": {
+      "nombre": "Oftalmología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 10,
+    "fields": {
+      "nombre": "Otorrinolaringología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 11,
+    "fields": {
+      "nombre": "Pediatría"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 12,
+    "fields": {
+      "nombre": "Psiquiatría"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 13,
+    "fields": {
+      "nombre": "Radiología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 14,
+    "fields": {
+      "nombre": "Traumatología"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 15,
+    "fields": {
+      "nombre": "Urología"
+    }
+  }
+]

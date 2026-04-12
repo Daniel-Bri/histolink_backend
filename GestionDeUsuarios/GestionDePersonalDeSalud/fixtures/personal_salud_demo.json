@@ -1,0 +1,151 @@
+[
+  {
+    "model": "auth.user",
+    "pk": 9001,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$JwtxPi2pu1PO6Wkb7EK4SV$5viSvgZQIKDzUELDgESWzfzFpKolimeynpTUsPqQ4ZI=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "medico.gonzales",
+      "first_name": "Carlos",
+      "last_name": "Gonzales",
+      "email": "medico1@demo.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-04-10T10:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 9002,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$JwtxPi2pu1PO6Wkb7EK4SV$5viSvgZQIKDzUELDgESWzfzFpKolimeynpTUsPqQ4ZI=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "medico.romero",
+      "first_name": "Andrea",
+      "last_name": "Romero",
+      "email": "medico2@demo.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-04-10T10:05:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 9003,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$JwtxPi2pu1PO6Wkb7EK4SV$5viSvgZQIKDzUELDgESWzfzFpKolimeynpTUsPqQ4ZI=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "enfermera.vargas",
+      "first_name": "Lucia",
+      "last_name": "Vargas",
+      "email": "enfermera@demo.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-04-10T10:10:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 9004,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$JwtxPi2pu1PO6Wkb7EK4SV$5viSvgZQIKDzUELDgESWzfzFpKolimeynpTUsPqQ4ZI=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "admin.suarez",
+      "first_name": "Martin",
+      "last_name": "Suarez",
+      "email": "admin@demo.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-04-10T10:15:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 9101,
+    "fields": {
+      "nombre": "Medicina General"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 9102,
+    "fields": {
+      "nombre": "Pediatria"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.especialidad",
+    "pk": 9103,
+    "fields": {
+      "nombre": "Emergencias"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.personalsalud",
+    "pk": 9201,
+    "fields": {
+      "user": 9001,
+      "item_min_salud": "MINSAL-PS-0001",
+      "rol": "medico",
+      "especialidad": 9101,
+      "telefono": "+59170010001",
+      "is_active": true,
+      "created_at": "2026-04-10T11:00:00Z",
+      "updated_at": "2026-04-10T11:00:00Z"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.personalsalud",
+    "pk": 9202,
+    "fields": {
+      "user": 9002,
+      "item_min_salud": "MINSAL-PS-0002",
+      "rol": "medico",
+      "especialidad": 9102,
+      "telefono": "+59170010002",
+      "is_active": true,
+      "created_at": "2026-04-10T11:05:00Z",
+      "updated_at": "2026-04-10T11:05:00Z"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.personalsalud",
+    "pk": 9203,
+    "fields": {
+      "user": 9003,
+      "item_min_salud": "MINSAL-PS-0003",
+      "rol": "enfermera",
+      "especialidad": null,
+      "telefono": "+59170010003",
+      "is_active": true,
+      "created_at": "2026-04-10T11:10:00Z",
+      "updated_at": "2026-04-10T11:10:00Z"
+    }
+  },
+  {
+    "model": "GestionDePersonalDeSalud.personalsalud",
+    "pk": 9204,
+    "fields": {
+      "user": 9004,
+      "item_min_salud": "MINSAL-PS-0004",
+      "rol": "admin",
+      "especialidad": null,
+      "telefono": "+59170010004",
+      "is_active": true,
+      "created_at": "2026-04-10T11:15:00Z",
+      "updated_at": "2026-04-10T11:15:00Z"
+    }
+  }
+]

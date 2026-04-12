@@ -8,6 +8,7 @@ class Paciente(models.Model):
     SEXO_CHOICES = [
         ("M", "Masculino"),
         ("F", "Femenino"),
+        ("O", "Otro"),
     ]
     AUTOIDENTIFICACION_CHOICES = [
         ("QUECHUA",    "Quechua"),
@@ -39,6 +40,7 @@ class Paciente(models.Model):
     fecha_nacimiento = models.DateField(verbose_name="Fecha de nacimiento")
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, verbose_name="Sexo")
     autoidentificacion = models.CharField(max_length=20, choices=AUTOIDENTIFICACION_CHOICES, default="NE", verbose_name="Autoidentificación étnica")
+    email = models.EmailField(blank=True, default="", verbose_name="Correo electrónico")
     telefono = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
     direccion = models.TextField(blank=True, default="", verbose_name="Dirección")
     nombre_responsable = models.CharField(max_length=200, blank=True, default="", verbose_name="Nombre del responsable")
