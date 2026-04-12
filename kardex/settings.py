@@ -211,12 +211,10 @@ else:
             "TIMEOUT": 900,
         },
         "rate_limit": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://127.0.0.1:6379/2",
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         },
         "especialidad_cache": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://127.0.0.1:6379/1",
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "TIMEOUT": 3600,
         },
     }
