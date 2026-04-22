@@ -48,7 +48,7 @@ CLINICAS = [
         ],
         "personal": [
             {
-                "username": "dir_sanpablo", "password": "Test1234!",
+                "username": "dir_sanpablo", "password": "12345678",
                 "first_name": "Santiago", "last_name": "Aparicio Rojas",
                 "email": "dir@sanpablo.test",
                 "rol_grupo": "Director",
@@ -56,7 +56,7 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
-                "username": "med_sanpablo", "password": "Test1234!",
+                "username": "med_sanpablo", "password": "12345678",
                 "first_name": "Carlos", "last_name": "Vidal Torrez",
                 "email": "medico@sanpablo.test",
                 "rol_grupo": "Médico",
@@ -64,7 +64,7 @@ CLINICAS = [
                 "especialidad": "Cardiología",
             },
             {
-                "username": "enf_sanpablo", "password": "Test1234!",
+                "username": "enf_sanpablo", "password": "12345678",
                 "first_name": "Rosa", "last_name": "Quispe Mamani",
                 "email": "enfermera@sanpablo.test",
                 "rol_grupo": "Enfermera",
@@ -72,7 +72,7 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
-                "username": "adm_sanpablo", "password": "Test1234!",
+                "username": "adm_sanpablo", "password": "12345678",
                 "first_name": "Jorge", "last_name": "Mamani Flores",
                 "email": "admin@sanpablo.test",
                 "rol_grupo": "Administrativo",
@@ -234,7 +234,7 @@ CLINICAS = [
         ],
         "personal": [
             {
-                "username": "dir_cnorte", "password": "Test1234!",
+                "username": "dir_cnorte", "password": "12345678",
                 "first_name": "Elena", "last_name": "Vargas Ponce",
                 "email": "directora@cnorte.test",
                 "rol_grupo": "Director",
@@ -242,7 +242,7 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
-                "username": "med_cnorte", "password": "Test1234!",
+                "username": "med_cnorte", "password": "12345678",
                 "first_name": "Luis", "last_name": "Rojas Heredia",
                 "email": "medico@cnorte.test",
                 "rol_grupo": "Médico",
@@ -250,7 +250,7 @@ CLINICAS = [
                 "especialidad": "Medicina General",
             },
             {
-                "username": "enf_cnorte", "password": "Test1234!",
+                "username": "enf_cnorte", "password": "12345678",
                 "first_name": "Carmen", "last_name": "Flores Huanca",
                 "email": "enfermera@cnorte.test",
                 "rol_grupo": "Enfermera",
@@ -415,7 +415,7 @@ CLINICAS = [
         ],
         "personal": [
             {
-                "username": "dir_srosa", "password": "Test1234!",
+                "username": "dir_srosa", "password": "12345678",
                 "first_name": "Ana", "last_name": "Mendez Suarez",
                 "email": "directora@srosa.test",
                 "rol_grupo": "Director",
@@ -423,7 +423,7 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
-                "username": "med_srosa", "password": "Test1234!",
+                "username": "med_srosa", "password": "12345678",
                 "first_name": "Fernando", "last_name": "Castro Vaca",
                 "email": "medico@srosa.test",
                 "rol_grupo": "Médico",
@@ -431,7 +431,7 @@ CLINICAS = [
                 "especialidad": "Medicina General",
             },
             {
-                "username": "enf_srosa", "password": "Test1234!",
+                "username": "enf_srosa", "password": "12345678",
                 "first_name": "Lucia", "last_name": "Torrez Antelo",
                 "email": "enfermera@srosa.test",
                 "rol_grupo": "Enfermera",
@@ -439,7 +439,7 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
-                "username": "lab_srosa", "password": "Test1234!",
+                "username": "lab_srosa", "password": "12345678",
                 "first_name": "Miguel", "last_name": "Barba Justiniano",
                 "email": "laboratorio@srosa.test",
                 "rol_grupo": "Laboratorio",
