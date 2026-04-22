@@ -19,6 +19,7 @@ class PacienteSerializer(serializers.ModelSerializer):
         choices=["M", "F", "O"],
         required=True,
     )
+    establecimiento = serializers.SerializerMethodField(read_only=True)
     ci = serializers.CharField(
         max_length=10,
         min_length=4,
@@ -67,10 +68,16 @@ class PacienteSerializer(serializers.ModelSerializer):
             "telefono",
             "direccion",
             "activo",
+            "establecimiento",
             "creado_en",
             "actualizado_en",
         ]
-        read_only_fields = ["id", "activo", "creado_en", "actualizado_en"]
+        read_only_fields = ["id", "activo", "establecimiento", "creado_en", "actualizado_en"]
+
+    def get_establecimiento(self, obj):
+        if obj.tenant:
+            return {"id": obj.tenant.id, "nombre": obj.tenant.nombre}
+        return None
 
     def validate_ci_complemento(self, value):
         value = (value or "").strip().upper()

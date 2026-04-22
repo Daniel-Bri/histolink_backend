@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
+from Tenants.managers import TenantManager
 
 
 class Triaje(models.Model):
@@ -23,6 +24,14 @@ class Triaje(models.Model):
         ("AZUL",     "Azul - No urgente"),
     ]
 
+    tenant = models.ForeignKey(
+        'Tenants.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='triajes',
+        verbose_name='Establecimiento',
+    )
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
@@ -125,6 +134,8 @@ class Triaje(models.Model):
         verbose_name="Hora de triaje",
         help_text="Timestamp automático de cuándo se realizó el triaje.",
     )
+
+    objects = TenantManager()
 
     class Meta:
         verbose_name        = "Triaje"

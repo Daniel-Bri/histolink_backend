@@ -1,12 +1,24 @@
 from django.conf import settings
 from django.db import models
+from Tenants.managers import TenantManager
 
 
 class Especialidad(models.Model):
-    nombre = models.CharField(max_length=120, unique=True)
+    tenant = models.ForeignKey(
+        'Tenants.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='especialidades',
+        verbose_name='Establecimiento',
+    )
+    nombre = models.CharField(max_length=120)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ["nombre"]
+        unique_together = [("nombre", "tenant")]
 
     def __str__(self):
         return self.nombre
@@ -23,12 +35,20 @@ class PersonalSalud(models.Model):
         (ROL_ADMIN, "Admin"),
     ]
 
+    tenant = models.ForeignKey(
+        'Tenants.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='personal_salud',
+        verbose_name='Establecimiento',
+    )
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="perfil_personal_salud",
     )
-    item_min_salud = models.CharField(max_length=20, unique=True)
+    item_min_salud = models.CharField(max_length=20)
     rol = models.CharField(max_length=20, choices=ROLES)
     especialidad = models.ForeignKey(
         Especialidad,
@@ -42,8 +62,11 @@ class PersonalSalud(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = TenantManager()
+
     class Meta:
         ordering = ["-created_at"]
+        unique_together = [("item_min_salud", "tenant")]
 
     def __str__(self):
         return f"{self.user} - {self.item_min_salud}"
