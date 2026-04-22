@@ -92,6 +92,7 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        tenant = validated_data.pop('tenant', None)
         user = User.objects.create_user(
             username=validated_data["username"],
             first_name=validated_data["first_name"].strip(),
@@ -102,6 +103,7 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
         telefono = validated_data.get("telefono", "").strip() or None
         personal = PersonalSalud.objects.create(
             user=user,
+            tenant=tenant,
             item_min_salud=validated_data["item_min_salud"],
             rol=validated_data["rol"],
             especialidad=validated_data.get("especialidad"),

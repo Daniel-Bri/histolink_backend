@@ -47,12 +47,15 @@ class PersonalSaludViewSet(ModelViewSet):
         return PersonalSaludSerializer
 
     def get_queryset(self):
-        queryset = PersonalSalud.objects.select_related("user", "especialidad")
+        queryset = PersonalSalud.objects.select_related("user", "especialidad", "tenant")
         if self.action == "list":
             incluir_inactivos = self.request.query_params.get("incluir_inactivos", "false").lower() == "true"
             if not incluir_inactivos:
                 queryset = queryset.filter(is_active=True)
         return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=self.request.tenant)
 
     def perform_destroy(self, instance):
         instance.is_active = False
@@ -68,8 +71,15 @@ class PersonalSaludViewSet(ModelViewSet):
 
 
 class EspecialidadViewSet(ModelViewSet):
-    queryset = Especialidad.objects.all()
     serializer_class = EspecialidadSerializer
+
+    def get_queryset(self):
+        return Especialidad.objects.all()
+
+    def _cache_key(self):
+        tenant = getattr(self.request, 'tenant', None)
+        slug = tenant.slug if tenant else 'global'
+        return f"especialidades:list:{slug}:v1"
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
@@ -77,9 +87,10 @@ class EspecialidadViewSet(ModelViewSet):
         return [IsAuthenticated(), IsStaffOrAdminRole()]
 
     def list(self, request, *args, **kwargs):
+        cache_key = self._cache_key()
         try:
             cache = caches["especialidad_cache"]
-            cached = cache.get(ESPECIALIDAD_LIST_CACHE_KEY)
+            cached = cache.get(cache_key)
             if cached is not None:
                 return Response(cached)
         except Exception:
@@ -92,14 +103,14 @@ class EspecialidadViewSet(ModelViewSet):
 
         if cache is not None:
             try:
-                cache.set(ESPECIALIDAD_LIST_CACHE_KEY, data, timeout=ESPECIALIDAD_CACHE_TIMEOUT)
+                cache.set(cache_key, data, timeout=ESPECIALIDAD_CACHE_TIMEOUT)
             except Exception:
                 pass
 
         return Response(data)
 
     def perform_create(self, serializer):
-        super().perform_create(serializer)
+        serializer.save(tenant=self.request.tenant)
         _invalidate_especialidad_list_cache()
 
     def perform_update(self, serializer):

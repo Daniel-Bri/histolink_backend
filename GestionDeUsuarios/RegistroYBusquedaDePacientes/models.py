@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from Tenants.managers import TenantManager
 
 
 class Paciente(models.Model):
@@ -32,6 +33,14 @@ class Paciente(models.Model):
         ("PARTICULAR", "Particular"),
     ]
 
+    tenant = models.ForeignKey(
+        'Tenants.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='pacientes',
+        verbose_name='Establecimiento',
+    )
     ci = models.CharField(max_length=15, db_index=True, verbose_name="Carnet de Identidad")
     ci_complemento = models.CharField(max_length=5, blank=True, default="", verbose_name="Complemento del CI")
     nombres = models.CharField(max_length=150, verbose_name="Nombres")
@@ -59,11 +68,13 @@ class Paciente(models.Model):
     creado_en = models.DateTimeField(auto_now_add=True, verbose_name="Creado en")
     actualizado_en = models.DateTimeField(auto_now=True, verbose_name="Actualizado en")
 
+    objects = TenantManager()
+
     class Meta:
         verbose_name        = "Paciente"
         verbose_name_plural = "Pacientes"
         ordering            = ["apellido_paterno", "apellido_materno", "nombres"]
-        unique_together     = [("ci", "ci_complemento")]
+        unique_together     = [("ci", "ci_complemento", "tenant")]
         constraints = [
             models.CheckConstraint(
                 check=~models.Q(ci=""),

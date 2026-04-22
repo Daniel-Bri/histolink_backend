@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import models
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 from AtencionClinica.RegistroDeTriaje.models import Triaje
+from Tenants.managers import TenantManager
 
 
 class Consulta(models.Model):
@@ -22,6 +23,14 @@ class Consulta(models.Model):
         ("FIRMADA",    "Firmada"),
     ]
 
+    tenant = models.ForeignKey(
+        'Tenants.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='consultas',
+        verbose_name='Establecimiento',
+    )
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
@@ -155,6 +164,8 @@ class Consulta(models.Model):
         verbose_name="Actualizado en",
         help_text="Timestamp automático de la última modificación.",
     )
+
+    objects = TenantManager()
 
     class Meta:
         verbose_name        = "Consulta"

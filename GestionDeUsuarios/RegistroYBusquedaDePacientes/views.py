@@ -16,20 +16,22 @@ class PacientePagination(PageNumberPagination):
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
-    queryset = Paciente.objects.all().order_by('-creado_en')
     serializer_class = PacienteSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['ci', 'apellido_paterno', 'apellido_materno']
     pagination_class = PacientePagination
 
+    def get_queryset(self):
+        return Paciente.objects.all().order_by('-creado_en')
+
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            # Lectura: cualquier personal autenticado
             return [IsAuthenticated()]
         if self.action in ['create', 'update', 'partial_update']:
-            # Escritura: Médico, Enfermera, Administrativo
             return [EsMedicoEnfermeroOAdmin()]
         if self.action == 'destroy':
-            # Eliminación: solo Administrativo o Director
             return [EsAdminODirector()]
         return [IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=self.request.tenant, creado_por=self.request.user)
