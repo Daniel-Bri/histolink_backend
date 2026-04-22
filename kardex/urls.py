@@ -31,4 +31,6 @@ urlpatterns = [
     path("api/especialidades/", include(especialidades_urlpatterns)),
 
     path("api/usuarios-sin-perfil/", usuarios_sin_perfil),
+
+    path("api/clinica/", include("AtencionClinica.EmisionDeRecetaMedica.urls")),
 ]
