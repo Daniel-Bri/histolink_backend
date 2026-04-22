@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    # ── Multitenant ───────────────────────────────────────────────────
+    "Tenants",
     # ── GestionDeUsuarios ─────────────────────────────────────────────
     "GestionDeUsuarios.LoginYAutenticacion",
     "GestionDeUsuarios.GestionDePersonalDeSalud",
@@ -92,6 +94,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Multitenant — debe ir después de AuthenticationMiddleware
+    "Tenants.middleware.TenantMiddleware",
     # T008 — Auditoría de operaciones de escritura
     "kardex.middleware.AuditoriaMiddleware",
 ]

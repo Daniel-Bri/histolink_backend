@@ -17,10 +17,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializa auth_user para perfil y respuestas de registro.
-    groups se devuelve como lista de strings (nombres de rol),
-    igual que en la respuesta de login — formato consistente para todos los clientes.
+    Incluye el tenant (establecimiento) al que pertenece el usuario.
     """
     groups = serializers.SerializerMethodField()
+    tenant = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -35,11 +35,25 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
             "groups",
+            "tenant",
         )
         read_only_fields = fields
 
     def get_groups(self, obj):
         return list(obj.groups.values_list("name", flat=True))
+
+    def get_tenant(self, obj):
+        try:
+            perfil = obj.perfil_personal_salud
+            if perfil.tenant:
+                return {
+                    "id":     perfil.tenant.id,
+                    "nombre": perfil.tenant.nombre,
+                    "slug":   perfil.tenant.slug,
+                }
+        except Exception:
+            pass
+        return None
 
 
 # ── Registro ────────────────────────────────────────────────────────────
@@ -119,9 +133,23 @@ class RegisterSerializer(serializers.Serializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
-    Extiende el login JWT para incluir datos del usuario en la respuesta.
-    Retorna: access, refresh, user (id, username, email, groups).
+    Extiende el login JWT para:
+    1. Incluir tenant_id en el payload del token (lo usa TenantMiddleware en cada request).
+    2. Incluir datos del tenant en la respuesta JSON (lo usa el frontend para mostrar nombre del establecimiento).
     """
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        try:
+            perfil = user.perfil_personal_salud
+            if perfil.tenant_id:
+                token['tenant_id']   = perfil.tenant_id
+                token['tenant_slug'] = perfil.tenant.slug
+        except Exception:
+            token['tenant_id']   = None
+            token['tenant_slug'] = None
+        return token
 
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -129,15 +157,28 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
         groups = list(user.groups.values_list("name", flat=True))
 
+        tenant_info = None
+        try:
+            perfil = user.perfil_personal_salud
+            if perfil.tenant:
+                tenant_info = {
+                    "id":     perfil.tenant.id,
+                    "nombre": perfil.tenant.nombre,
+                    "slug":   perfil.tenant.slug,
+                }
+        except Exception:
+            pass
+
         data["user"] = {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "is_staff": user.is_staff,
+            "id":           user.id,
+            "username":     user.username,
+            "email":        user.email,
+            "first_name":   user.first_name,
+            "last_name":    user.last_name,
+            "is_staff":     user.is_staff,
             "is_superuser": user.is_superuser,
-            "groups": groups,
+            "groups":       groups,
+            "tenant":       tenant_info,
         }
         return data
 

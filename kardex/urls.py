@@ -11,6 +11,9 @@ from GestionDeUsuarios.GestionDePersonalDeSalud.views import usuarios_sin_perfil
 urlpatterns = [
     path("admin/", admin.site.urls),
 
+    # Multitenant — establecimientos
+    path("api/tenants/", include("Tenants.urls")),
+
     # GestionDeUsuarios — CU1: Login y Autenticación
     path("api/auth/", include("GestionDeUsuarios.LoginYAutenticacion.urls")),
 
