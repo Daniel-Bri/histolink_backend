@@ -32,5 +32,8 @@ urlpatterns = [
 
     path("api/usuarios-sin-perfil/", usuarios_sin_perfil),
 
+    # AtencionClinica — CU8: Consulta Médica SOAP
+    path("api/consultas/", include("AtencionClinica.ConsultaMedicaSOAP.urls")),
+
     path("api/clinica/", include("AtencionClinica.EmisionDeRecetaMedica.urls")),
 ]
