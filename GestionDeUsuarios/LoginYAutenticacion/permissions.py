@@ -63,3 +63,11 @@ class EsMedicoEnfermeroOAdmin(BasePermission):
             request.user.is_authenticated and
             request.user.groups.filter(name__in=['Médico', 'Enfermera', 'Administrativo']).exists()
         )
+
+
+class EsFarmacia(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated and
+            request.user.groups.filter(name='Farmacia').exists()
+        )

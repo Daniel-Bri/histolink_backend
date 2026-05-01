@@ -1,4 +1,4 @@
-# T012 — Serializers clínico y tratamiento + validaciones + campos ML triaje
+# CU7 — Serializer de Triaje con validaciones fisiológicas
 
 from rest_framework import serializers
 from .models import Triaje
@@ -7,18 +7,11 @@ from .models import Triaje
 class TriajeSerializer(serializers.ModelSerializer):
     """Serializer completo para registro y lectura de triaje."""
 
-    # Campos calculados (read-only)
-    imc = serializers.SerializerMethodField()
+    imc              = serializers.SerializerMethodField()
     presion_arterial = serializers.SerializerMethodField()
 
-    # Campos ML (read-only, asignados por el modelo IA)
-    nivel_urgencia_ia = serializers.CharField(
-        source='nivel_urgencia',
-        read_only=True,
-    )
-
     class Meta:
-        model = Triaje
+        model  = Triaje
         fields = [
             'id',
             'paciente',
@@ -34,11 +27,9 @@ class TriajeSerializer(serializers.ModelSerializer):
             'glucemia',
             'escala_dolor',
             'nivel_urgencia',
-            'nivel_urgencia_ia',
             'motivo_consulta_triaje',
             'observaciones',
             'hora_triaje',
-            # Calculados
             'imc',
             'presion_arterial',
         ]
