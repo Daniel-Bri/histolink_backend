@@ -1,7 +1,13 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import TriajeViewSet
 
 app_name = "RegistroDeTriaje"
 
+router = DefaultRouter()
+router.register(r"", TriajeViewSet, basename="triaje")
+
 urlpatterns = [
-    # Endpoints de CU7 - Registro de Triaje — pendientes de implementación.
+    path("", include(router.urls)),
 ]

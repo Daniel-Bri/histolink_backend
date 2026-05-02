@@ -31,4 +31,12 @@ urlpatterns = [
     path("api/especialidades/", include(especialidades_urlpatterns)),
 
     path("api/usuarios-sin-perfil/", usuarios_sin_perfil),
+
+    path("api/clinica/", include("AtencionClinica.EmisionDeRecetaMedica.urls")),
+
+    # AtencionClinica — CU7: Registro de Triaje (T004 / T005)
+    path("api/triaje/", include("AtencionClinica.RegistroDeTriaje.urls")),
+
+    # Reportes — CU22: Producción y Flujo de Atención (T037/T038/T039)
+    path("api/reportes/", include("SeguridadAvanzadaYAdministracion.ReporteProduccion.urls")),
 ]

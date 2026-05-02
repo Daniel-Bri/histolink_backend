@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import RecetaViewSet
 
 app_name = "EmisionDeRecetaMedica"
 
+router = DefaultRouter()
+router.register(r'recetas', RecetaViewSet, basename='receta')
+
 urlpatterns = [
-    # Endpoints de CU9 - Emisión de Receta Médica — pendientes de implementación.
+    path('', include(router.urls)),
 ]
