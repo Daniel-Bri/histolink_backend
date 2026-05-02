@@ -60,6 +60,10 @@ Pillow==11.0.0                   # procesamiento de imágenes (si aplica)
 python-magic==0.4.27             # validación de tipo MIME de archivos subidos
 requests==2.32.3                 # llamadas HTTP internas (si no se usa SDK)
 
+# ── REPORTES (CU22) ──────────────────────────────────────────────────────
+openpyxl==3.1.2                  # generación de archivos Excel (.xlsx)
+reportlab==4.2.0                 # generación de archivos PDF
+
 # ── DESARROLLO Y TESTING ────────────────────────────────────────────────
 # Instalar solo en desarrollo: pip install -r requirements-dev.txt
 # pytest==8.3.3

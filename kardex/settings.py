@@ -83,6 +83,8 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.BreakGlass_Aprobacion",
     "SeguridadAvanzadaYAdministracion.GestionDePermisosPaciente",
     "SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS",
+    # ── Reportes ─────────────────────────────────────────────────────
+    "SeguridadAvanzadaYAdministracion.ReporteProduccion",
 ]
 
 MIDDLEWARE = [
