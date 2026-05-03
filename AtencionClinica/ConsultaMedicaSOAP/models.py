@@ -2,7 +2,6 @@
 
 from django.conf import settings
 from django.db import models
-from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 from AtencionClinica.RegistroDeTriaje.models import Triaje
 
 
@@ -13,7 +12,7 @@ class Consulta(models.Model):
     codigo_cie10_principal es OBLIGATORIO para reportes al SNIS Bolivia.
     hash_documento se calcula al firmar y se ancla en blockchain vía Celery.
     Estado: BORRADOR → COMPLETADA → FIRMADA (flujo unidireccional).
-    TODO: cuando se implemente Ficha, el campo 'paciente' se reemplaza por 'ficha' (OneToOne).
+    Vinculada a una ficha de atención (varias consultas por ficha en reingresos).
     """
 
     ESTADO_CHOICES = [
@@ -22,12 +21,13 @@ class Consulta(models.Model):
         ("FIRMADA",    "Firmada"),
     ]
 
-    paciente = models.ForeignKey(
-        Paciente,
+    ficha = models.ForeignKey(
+        "AperturaFichaYColaDeAtencion.Ficha",
         on_delete=models.CASCADE,
         related_name="consultas",
-        verbose_name="Paciente",
-        help_text="Paciente atendido en esta consulta.",
+        verbose_name="Ficha",
+        help_text="Ficha clínica bajo la cual se registra esta consulta.",
+        db_index=True,
     )
     medico = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -165,4 +165,5 @@ class Consulta(models.Model):
         ]
 
     def __str__(self):
-        return f"Consulta {self.id} - {self.paciente} ({self.creado_en.date()})"
+        pac = self.ficha.paciente if getattr(self, "ficha_id", None) else "—"
+        return f"Consulta {self.id} - {pac} ({self.creado_en.date()})"

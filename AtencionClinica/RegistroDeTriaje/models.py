@@ -3,7 +3,6 @@
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 
 
 class Triaje(models.Model):
@@ -12,7 +11,7 @@ class Triaje(models.Model):
     Registrado por enfermería antes de la consulta médica.
     IMC y presion_arterial se calculan como @property — no se guardan en BD.
     Todos los rangos tienen CHECK CONSTRAINT en PostgreSQL como segunda línea de defensa.
-    TODO: cuando se implemente Ficha, el campo 'paciente' se reemplaza por 'ficha' (OneToOne).
+    Una ficha de atención tiene como mucho un triaje asociado (OneToOne inverso desde Ficha.triaje).
     """
 
     NIVEL_URGENCIA_CHOICES = [
@@ -23,12 +22,12 @@ class Triaje(models.Model):
         ("AZUL",     "Azul - No urgente"),
     ]
 
-    paciente = models.ForeignKey(
-        Paciente,
+    ficha = models.OneToOneField(
+        "AperturaFichaYColaDeAtencion.Ficha",
         on_delete=models.CASCADE,
-        related_name="triajes",
-        verbose_name="Paciente",
-        help_text="Paciente al que se le realizó el triaje.",
+        related_name="triaje",
+        verbose_name="Ficha",
+        help_text="Ficha clínica a la que pertenece este triaje.",
     )
     enfermera = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -143,7 +142,8 @@ class Triaje(models.Model):
         ]
 
     def __str__(self):
-        return f"Triaje {self.id} - {self.paciente} ({self.hora_triaje.date()})"
+        pac = self.ficha.paciente if getattr(self, "ficha_id", None) else "—"
+        return f"Triaje {self.id} - {pac} ({self.hora_triaje.date()})"
 
     @property
     def imc(self):

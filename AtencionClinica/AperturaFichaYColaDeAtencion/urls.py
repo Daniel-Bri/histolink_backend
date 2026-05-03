@@ -1,7 +1,13 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import FichaViewSet
 
 app_name = "AperturaFichaYColaDeAtencion"
 
+router = DefaultRouter()
+router.register("fichas", FichaViewSet, basename="ficha")
+
 urlpatterns = [
-    # Endpoints de CU6 - Apertura de Ficha y Cola de Atención — pendientes de implementación.
+    path("", include(router.urls)),
 ]

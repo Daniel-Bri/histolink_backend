@@ -251,7 +251,7 @@ class ServicioML:
 
             # Triaje más reciente para signos vitales
             ultimo_triaje = (
-                Triaje.objects.filter(paciente=paciente)
+                Triaje.objects.filter(ficha__paciente=paciente)
                 .order_by("-hora_triaje")
                 .first()
             )
@@ -297,7 +297,7 @@ class ServicioML:
             from datetime import date, timedelta
             hace_un_anio = date.today() - timedelta(days=365)
             return Consulta.objects.filter(
-                paciente_id=paciente_id,
+                ficha__paciente_id=paciente_id,
                 creado_en__date__gte=hace_un_anio
             ).count()
         except Exception:
