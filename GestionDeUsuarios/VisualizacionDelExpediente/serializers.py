@@ -65,7 +65,7 @@ class ResultadoEstudioSerializer(serializers.ModelSerializer):
 
 
 class OrdenEstudioSerializer(serializers.ModelSerializer):
-    tipo_label             = serializers.CharField(source="get_tipo_estudio_display", read_only=True)
+    tipo_label             = serializers.CharField(source="get_tipo_display", read_only=True)
     estado_label           = serializers.CharField(source="get_estado_display", read_only=True)
     solicitante_nombre     = serializers.SerializerMethodField()
     resultado              = ResultadoEstudioSerializer(read_only=True)
@@ -75,7 +75,10 @@ class OrdenEstudioSerializer(serializers.ModelSerializer):
         exclude = ("consulta",)
 
     def get_solicitante_nombre(self, obj):
-        u = obj.medico_solicitante
+        ps = obj.medico_solicitante
+        if not ps:
+            return None
+        u = ps.user
         return f"{u.first_name} {u.last_name}".strip() or u.username if u else None
 
 
@@ -83,7 +86,7 @@ class ConsultaSerializer(serializers.ModelSerializer):
     medico_nombre = serializers.SerializerMethodField()
     estado_label  = serializers.CharField(source="get_estado_display", read_only=True)
     recetas       = RecetaSerializer(many=True, read_only=True)
-    ordenes       = OrdenEstudioSerializer(many=True, read_only=True)
+    ordenes       = OrdenEstudioSerializer(source="ordenes_estudio", many=True, read_only=True)
 
     class Meta:
         model  = Consulta
@@ -139,8 +142,8 @@ class ExpedienteSerializer(serializers.ModelSerializer):
             .prefetch_related(
                 "recetas__medico",
                 "recetas__detalles",
-                "ordenes__medico_solicitante",
-                "ordenes__resultado__ingresado_por",
+                "ordenes_estudio__medico_solicitante__user",
+                "ordenes_estudio__resultado__ingresado_por",
             )
             .order_by("-creado_en")
         )

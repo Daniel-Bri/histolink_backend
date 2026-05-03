@@ -1,113 +1,231 @@
-# CU10 - Solicitud de Estudios y Carga de Resultados
+# CU10 - Solicitud de Estudios y Carga de Resultados (T009 OrdenEstudio)
 
 from django.conf import settings
-from django.db import models
-from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, models, transaction
+from django.utils import timezone
 
 
 class OrdenEstudio(models.Model):
     """
-    Solicitud de estudio complementario emitida por un médico en una consulta.
-    Una consulta puede tener N órdenes de distinto tipo.
-    El campo 'urgente' activa una cola prioritaria en el laboratorio.
-    El resultado se almacena en ResultadoEstudio (OneToOne).
+    Solicitud de estudio complementario emitida desde una consulta SOAP.
+    Correlativo ORD-AAAA-#####; compatibilidad con ResultadoEstudio (T010) vía related_name resultado.
     """
 
-    TIPO_CHOICES = [
-        ("LAB", "Laboratorio"),
-        ("RX",  "Radiografía"),
-        ("ECO", "Ecografía"),
-        ("TAC", "Tomografía"),
-        ("RMN", "Resonancia Magnética"),
-        ("ECG", "Electrocardiograma"),
-        ("END", "Endoscopía"),
-        ("BIO", "Biopsia"),
-        ("OTR", "Otro"),
-    ]
-    ESTADO_CHOICES = [
-        ("PENDIENTE",  "Pendiente"),
-        ("EN_PROCESO", "En proceso"),
-        ("DISPONIBLE", "Disponible"),
-        ("ENTREGADO",  "Entregado"),
-        ("CANCELADO",  "Cancelado"),
-    ]
+    class Estado(models.TextChoices):
+        SOLICITADA = "SOLICITADA", "Solicitada"
+        EN_PROCESO = "EN_PROCESO", "En Proceso"
+        COMPLETADA = "COMPLETADA", "Completada"
+        ANULADA = "ANULADA", "Anulada"
+
+    class TipoEstudio(models.TextChoices):
+        LAB = "LAB", "Laboratorio"
+        RX = "RX", "Radiografía"
+        ECO = "ECO", "Ecografía"
+        TC = "TC", "Tomografía Computarizada"
+        RMN = "RMN", "Resonancia Magnética"
+        ECG = "ECG", "Electrocardiograma"
+        END = "END", "Endoscopía"
+        OTRO = "OTRO", "Otro"
 
     consulta = models.ForeignKey(
-        Consulta,
+        "ConsultaMedicaSOAP.Consulta",
         on_delete=models.CASCADE,
-        related_name="ordenes",
+        related_name="ordenes_estudio",
         verbose_name="Consulta",
-        help_text="Consulta médica en la que se solicitó este estudio.",
     )
-    medico_solicitante = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="ordenes_solicitadas",
-        verbose_name="Médico solicitante",
-        help_text="Médico que solicitó el estudio.",
-    )
-    tipo_estudio = models.CharField(
-        max_length=5,
-        choices=TIPO_CHOICES,
-        db_index=True,
-        verbose_name="Tipo de estudio",
-        help_text="Categoría del estudio: LAB=Laboratorio, RX=Radiografía, ECO=Ecografía, TAC, RMN, etc.",
-    )
-    descripcion_estudio = models.CharField(
-        max_length=300,
+    tipo = models.CharField(max_length=20, choices=TipoEstudio.choices, verbose_name="Tipo")
+    descripcion = models.TextField(
         verbose_name="Descripción del estudio",
-        help_text="Nombre específico del estudio. Ej: Hemograma completo, Rx tórax PA, Ecografía abdominal.",
+        help_text="Descripción detallada del estudio solicitado.",
     )
     indicacion_clinica = models.TextField(
         verbose_name="Indicación clínica",
-        help_text="Justificación clínica del estudio. Obligatorio para el laboratorio/imagen. Ej: Sospecha de neumonía.",
+        help_text="Justificación médica del estudio.",
     )
-    observaciones = models.TextField(
-        blank=True, default="",
-        verbose_name="Observaciones",
-        help_text="Instrucciones especiales para el técnico. Ej: paciente en ayunas, preparación especial.",
+    urgente = models.BooleanField(default=False, verbose_name="Urgente")
+    motivo_urgencia = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Motivo de urgencia",
+        help_text="Obligatorio si urgente=True.",
     )
     estado = models.CharField(
-        max_length=15,
-        choices=ESTADO_CHOICES,
-        default="PENDIENTE",
-        db_index=True,
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.SOLICITADA,
         verbose_name="Estado",
-        help_text="Flujo: PENDIENTE → EN_PROCESO → DISPONIBLE → ENTREGADO. O CANCELADO si no se realiza.",
+        db_index=True,
     )
-    urgente = models.BooleanField(
-        default=False,
-        verbose_name="Urgente",
-        help_text="True = resultado necesario el mismo día. Activa cola prioritaria en laboratorio.",
+    correlativo_orden = models.CharField(
+        max_length=24,
+        unique=True,
+        editable=False,
+        blank=True,
+        verbose_name="Correlativo",
     )
-    fecha_solicitud = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Fecha de solicitud",
-        help_text="Timestamp automático de cuándo se realizó la orden.",
+    fecha_solicitud = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de solicitud")
+    fecha_inicio_proceso = models.DateTimeField(null=True, blank=True, verbose_name="Inicio en laboratorio")
+    fecha_completada = models.DateTimeField(null=True, blank=True, verbose_name="Completada")
+    medico_solicitante = models.ForeignKey(
+        "GestionDePersonalDeSalud.PersonalSalud",
+        on_delete=models.PROTECT,
+        related_name="ordenes_solicitadas",
+        verbose_name="Médico solicitante",
     )
-    fecha_limite = models.DateField(
-        null=True, blank=True,
-        verbose_name="Fecha límite",
-        help_text="Fecha máxima para que el resultado esté disponible. Opcional.",
+    tecnico_responsable = models.ForeignKey(
+        "GestionDePersonalDeSalud.PersonalSalud",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ordenes_procesadas",
+        verbose_name="Técnico responsable",
     )
+    resultado_texto = models.TextField(blank=True, null=True, verbose_name="Resultado (texto)")
+    resultado_archivo = models.FileField(
+        upload_to="resultados_estudios/%Y/%m/",
+        null=True,
+        blank=True,
+        verbose_name="Resultado (archivo)",
+    )
+    esta_activa = models.BooleanField(default=True, verbose_name="Activa")
+    creado_en = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Creado en",
+    )
+    actualizado_en = models.DateTimeField(auto_now=True, verbose_name="Actualizado en")
 
     class Meta:
-        verbose_name        = "Orden de Estudio"
+        verbose_name = "Orden de Estudio"
         verbose_name_plural = "Órdenes de Estudio"
-        ordering            = ["-fecha_solicitud"]
+        ordering = ["-urgente", "-fecha_solicitud"]
         indexes = [
-            models.Index(fields=["estado", "urgente"], name="idx_orden_estado_urgente"),
+            # ≤30 chars (Django E034); compuesto estado + urgente (T009)
+            models.Index(
+                fields=["estado", "urgente"],
+                name="ordenestudio_esturg_idx",
+            ),
+            models.Index(
+                fields=["consulta", "estado"],
+                name="SolicitudDe_consult_36cc07_idx",
+            ),
+            models.Index(
+                fields=["fecha_solicitud"],
+                name="SolicitudDe_fecha_s_0f42a9_idx",
+            ),
         ]
 
+    TRANSICIONES = {
+        Estado.SOLICITADA: {Estado.EN_PROCESO, Estado.ANULADA},
+        Estado.EN_PROCESO: {Estado.COMPLETADA, Estado.ANULADA},
+        Estado.COMPLETADA: set(),
+        Estado.ANULADA: set(),
+    }
+
     def __str__(self):
-        return f"{self.get_tipo_estudio_display()} — {self.descripcion_estudio}"
+        return f"{self.correlativo_orden or self.pk} — {self.get_tipo_display()}"
+
+    def clean(self):
+        super().clean()
+        orig = getattr(self, "_estado_original", None)
+        if self.pk and orig is not None:
+            self._validar_transicion(orig, self.estado)
+        if self.urgente and not (self.motivo_urgencia and str(self.motivo_urgencia).strip()):
+            raise ValidationError(
+                {"motivo_urgencia": "Debe especificar el motivo de urgencia."}
+            )
+        if self.estado == self.Estado.COMPLETADA:
+            tiene_txt = bool(self.resultado_texto and str(self.resultado_texto).strip())
+            tiene_arch = bool(self.resultado_archivo)
+            if not tiene_txt and not tiene_arch:
+                raise ValidationError(
+                    "Para completar la orden debe informar resultado en texto y/o archivo."
+                )
+
+    @classmethod
+    def _siguiente_correlativo_num(cls, year: int) -> int:
+        prefix = f"ORD-{year}-"
+        ultima = (
+            cls.objects.select_for_update()
+            .filter(correlativo_orden__startswith=prefix)
+            .order_by("-correlativo_orden")
+            .first()
+        )
+        if not ultima:
+            return 1
+        try:
+            return int(ultima.correlativo_orden.rsplit("-", 1)[-1], 10) + 1
+        except (ValueError, IndexError):
+            return 1
+
+    def _validar_transicion(self, prev: str, nuevo: str) -> None:
+        if prev == nuevo:
+            return
+        permitidas = self.TRANSICIONES.get(prev, set())
+        if nuevo not in permitidas:
+            raise ValidationError(
+                {"estado": f"Transición no permitida: {prev} → {nuevo}."}
+            )
+
+    def _marcar_fechas_por_estado(self, prev: str, nuevo: str) -> None:
+        if nuevo == self.Estado.EN_PROCESO and prev != self.Estado.EN_PROCESO:
+            if self.fecha_inicio_proceso is None:
+                self.fecha_inicio_proceso = timezone.now()
+        if nuevo == self.Estado.COMPLETADA and prev != self.Estado.COMPLETADA:
+            if self.fecha_completada is None:
+                self.fecha_completada = timezone.now()
+
+    def _limpiar_estado_original_preview(self) -> None:
+        """Evita que `_estado_original` de un save() previo contamine `full_clean()` en memoria."""
+        self.__dict__.pop("_estado_original", None)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self.full_clean(exclude=["correlativo_orden"])
+            year = timezone.now().year
+            for intento in range(8):
+                with transaction.atomic():
+                    n = type(self)._siguiente_correlativo_num(year)
+                    self.correlativo_orden = f"ORD-{year}-{n:05d}"
+                    try:
+                        self.full_clean()
+                        super().save(*args, **kwargs)
+                        return
+                    except IntegrityError as exc:
+                        err = str(exc).lower()
+                        if intento == 7 or ("unique" not in err and "duplicate" not in err):
+                            raise
+                self.correlativo_orden = ""
+            raise IntegrityError("No se pudo asignar correlativo único ORD.")
+
+        old = type(self).objects.get(pk=self.pk)
+        self._estado_original = old.estado
+
+        if old.estado in (self.Estado.COMPLETADA, self.Estado.ANULADA):
+            if self.estado != old.estado:
+                raise ValidationError("No se puede cambiar el estado de una orden cerrada.")
+            for field in self._meta.fields:
+                fname = field.name
+                if fname in ("pk", "id", "actualizado_en", "esta_activa"):
+                    continue
+                if getattr(old, fname) != getattr(self, fname):
+                    raise ValidationError(
+                        f"No se puede modificar la orden en estado {old.estado}."
+                    )
+            res = super().save(*args, **kwargs)
+            self._limpiar_estado_original_preview()
+            return res
+
+        if old.estado != self.estado:
+            self._marcar_fechas_por_estado(old.estado, self.estado)
+        self.full_clean()
+        super().save(*args, **kwargs)
+        self._limpiar_estado_original_preview()
 
 
 class ResultadoEstudio(models.Model):
     """
-    Resultado de una OrdenEstudio. Relación OneToOne: una orden tiene un resultado.
-    hash_archivo es el SHA-256 del PDF/imagen — se ancla en blockchain para
-    garantizar que el archivo no fue alterado después de ser emitido.
+    Resultado detallado asociado a una orden (T010). Relación 1:1 con OrdenEstudio.
     """
 
     orden = models.OneToOneField(
@@ -115,69 +233,32 @@ class ResultadoEstudio(models.Model):
         on_delete=models.CASCADE,
         related_name="resultado",
         verbose_name="Orden de estudio",
-        help_text="Orden de estudio a la que corresponde este resultado.",
     )
     ingresado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="resultados_ingresados",
         verbose_name="Ingresado por",
-        help_text="Laboratorista o técnico que cargó el resultado al sistema.",
     )
-    fecha_resultado = models.DateTimeField(
-        verbose_name="Fecha del resultado",
-        help_text="Cuándo estuvo listo el resultado del estudio.",
-    )
-    archivo_adjunto = models.CharField(
-        max_length=512,
-        blank=True, default="",
-        verbose_name="Archivo adjunto",
-        help_text="Ruta relativa del archivo en el servidor o clave en S3/MinIO. Ej: resultados/2026/hemograma_42.pdf.",
-    )
-    nombre_archivo = models.CharField(
-        max_length=255,
-        blank=True, default="",
-        verbose_name="Nombre del archivo",
-        help_text="Nombre original del archivo para mostrar al usuario. Ej: Hemograma_Juan_Perez.pdf.",
-    )
-    valores_resultado = models.TextField(
-        blank=True, default="",
-        verbose_name="Valores del resultado",
-        help_text="Valores en texto libre para resultados de laboratorio. Ej: Hemoglobina: 12.5 g/dL, Hematocrito: 38%.",
-    )
-    interpretacion_medica = models.TextField(
-        blank=True, default="",
-        verbose_name="Interpretación médica",
-        help_text="Interpretación del médico tratante al revisar el resultado. Se llena después de la entrega.",
-    )
+    fecha_resultado = models.DateTimeField(verbose_name="Fecha del resultado")
+    archivo_adjunto = models.CharField(max_length=512, blank=True, default="", verbose_name="Archivo adjunto")
+    nombre_archivo = models.CharField(max_length=255, blank=True, default="", verbose_name="Nombre del archivo")
+    valores_resultado = models.TextField(blank=True, default="", verbose_name="Valores del resultado")
+    interpretacion_medica = models.TextField(blank=True, default="", verbose_name="Interpretación médica")
     interpretado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="resultados_interpretados",
         verbose_name="Interpretado por",
-        help_text="Médico que interpretó el resultado. Nulo hasta que el médico lo revise.",
     )
-    fecha_interpretacion = models.DateTimeField(
-        null=True, blank=True,
-        verbose_name="Fecha de interpretación",
-        help_text="Cuándo interpretó el médico el resultado.",
-    )
-    hash_archivo = models.CharField(
-        max_length=64,
-        blank=True, default="",
-        db_index=True,
-        verbose_name="Hash del archivo",
-        help_text="SHA-256 del archivo adjunto. Se ancla en blockchain para verificación de integridad forense.",
-    )
-    creado_en = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Creado en",
-        help_text="Timestamp automático de cuándo se cargó el resultado.",
-    )
+    fecha_interpretacion = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de interpretación")
+    hash_archivo = models.CharField(max_length=64, blank=True, default="", db_index=True, verbose_name="Hash del archivo")
+    creado_en = models.DateTimeField(auto_now_add=True, verbose_name="Creado en")
 
     class Meta:
-        verbose_name        = "Resultado de Estudio"
+        verbose_name = "Resultado de Estudio"
         verbose_name_plural = "Resultados de Estudios"
 
     def __str__(self):

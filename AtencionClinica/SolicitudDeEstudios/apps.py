@@ -6,3 +6,6 @@ class SolicitudDeEstudiosConfig(AppConfig):
     name = "AtencionClinica.SolicitudDeEstudios"
     label = "SolicitudDeEstudios"
     verbose_name = "CU10 - Solicitud de Estudios y Carga de Resultados"
+
+    def ready(self):
+        import AtencionClinica.SolicitudDeEstudios.signals  # noqa: F401

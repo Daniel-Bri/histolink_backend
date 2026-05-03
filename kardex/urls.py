@@ -24,4 +24,7 @@ urlpatterns = [
 
     # AtencionClinica — CU6: Ficha / cola
     path("api/", include("AtencionClinica.AperturaFichaYColaDeAtencion.urls")),
+
+    # AtencionClinica — CU10: órdenes de estudio (T009)
+    path("api/", include("AtencionClinica.SolicitudDeEstudios.urls")),
 ]
