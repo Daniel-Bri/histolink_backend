@@ -23,7 +23,7 @@ class TriajeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Triaje
-        exclude = ("paciente",)
+        exclude = ("ficha",)
 
     def get_enfermera_nombre(self, obj):
         u = obj.enfermera
@@ -87,7 +87,7 @@ class ConsultaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Consulta
-        exclude = ("paciente",)
+        exclude = ("ficha",)
 
     def get_medico_nombre(self, obj):
         u = obj.medico
@@ -103,8 +103,8 @@ class ExpedienteSerializer(serializers.ModelSerializer):
     autoidentificacion_label = serializers.CharField(source="get_autoidentificacion_display", read_only=True)
     tipo_seguro_label    = serializers.CharField(source="get_tipo_seguro_display", read_only=True)
     antecedentes         = AntecedenteSerializer(read_only=True)
-    triajes              = TriajeSerializer(many=True, read_only=True)
-    consultas            = ConsultaSerializer(many=True, read_only=True)
+    triajes              = serializers.SerializerMethodField()
+    consultas            = serializers.SerializerMethodField()
 
     class Meta:
         model  = Paciente
@@ -123,3 +123,25 @@ class ExpedienteSerializer(serializers.ModelSerializer):
             "triajes",
             "consultas",
         ]
+
+    def get_triajes(self, obj: Paciente):
+        qs = (
+            Triaje.objects.filter(ficha__paciente=obj)
+            .select_related("enfermera", "ficha")
+            .order_by("-hora_triaje")
+        )
+        return TriajeSerializer(qs, many=True).data
+
+    def get_consultas(self, obj: Paciente):
+        qs = (
+            Consulta.objects.filter(ficha__paciente=obj)
+            .select_related("medico", "triaje", "ficha")
+            .prefetch_related(
+                "recetas__medico",
+                "recetas__detalles",
+                "ordenes__medico_solicitante",
+                "ordenes__resultado__ingresado_por",
+            )
+            .order_by("-creado_en")
+        )
+        return ConsultaSerializer(qs, many=True).data

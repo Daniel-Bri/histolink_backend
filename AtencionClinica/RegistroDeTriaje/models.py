@@ -3,8 +3,11 @@
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+<<<<<<< HEAD
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 from Tenants.managers import TenantManager
+=======
+>>>>>>> e4ae021c (Sprint2 T003	Modelo Ficha: API CRUD + correlativo automatico + transiciones estado + migrar FK a ficha en Triaje y Consulta)
 
 
 class Triaje(models.Model):
@@ -13,7 +16,7 @@ class Triaje(models.Model):
     Registrado por enfermería antes de la consulta médica.
     IMC y presion_arterial se calculan como @property — no se guardan en BD.
     Todos los rangos tienen CHECK CONSTRAINT en PostgreSQL como segunda línea de defensa.
-    TODO: cuando se implemente Ficha, el campo 'paciente' se reemplaza por 'ficha' (OneToOne).
+    Una ficha de atención tiene como mucho un triaje asociado (OneToOne inverso desde Ficha.triaje).
     """
 
     NIVEL_URGENCIA_CHOICES = [
@@ -24,6 +27,7 @@ class Triaje(models.Model):
         ("AZUL",     "Azul - No urgente"),
     ]
 
+<<<<<<< HEAD
     tenant = models.ForeignKey(
         'Tenants.Tenant',
         on_delete=models.CASCADE,
@@ -34,10 +38,14 @@ class Triaje(models.Model):
     )
     paciente = models.ForeignKey(
         Paciente,
+=======
+    ficha = models.OneToOneField(
+        "AperturaFichaYColaDeAtencion.Ficha",
+>>>>>>> e4ae021c (Sprint2 T003	Modelo Ficha: API CRUD + correlativo automatico + transiciones estado + migrar FK a ficha en Triaje y Consulta)
         on_delete=models.CASCADE,
-        related_name="triajes",
-        verbose_name="Paciente",
-        help_text="Paciente al que se le realizó el triaje.",
+        related_name="triaje",
+        verbose_name="Ficha",
+        help_text="Ficha clínica a la que pertenece este triaje.",
     )
     enfermera = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -154,7 +162,8 @@ class Triaje(models.Model):
         ]
 
     def __str__(self):
-        return f"Triaje {self.id} - {self.paciente} ({self.hora_triaje.date()})"
+        pac = self.ficha.paciente if getattr(self, "ficha_id", None) else "—"
+        return f"Triaje {self.id} - {pac} ({self.hora_triaje.date()})"
 
     @property
     def imc(self):
