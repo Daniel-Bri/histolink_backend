@@ -43,7 +43,10 @@ urlpatterns = [
     # Reportes — CU22: Producción y Flujo de Atención (T037/T038/T039)
     path("api/reportes/", include("SeguridadAvanzadaYAdministracion.ReporteProduccion.urls")),
 
-        # AtencionClinica — CU6: Ficha / cola
+    # AtencionClinica — CU6: Ficha / cola
     path("api/", include("AtencionClinica.AperturaFichaYColaDeAtencion.urls")),
+
+     # AtencionClinica — CU10: órdenes de estudio (T009)
+    path("api/", include("AtencionClinica.SolicitudDeEstudios.urls")),
 ]
 
