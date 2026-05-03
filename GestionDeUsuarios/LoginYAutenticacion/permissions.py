@@ -38,6 +38,16 @@ class EsPaciente(BasePermission):
         )
 
 
+class EsFarmacia(BasePermission):
+    """Permite acceso solo a usuarios del grupo 'Farmacia'."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated and
+            request.user.groups.filter(name='Farmacia').exists()
+        )
+
+
 class EsAdminODirector(BasePermission):
     def has_permission(self, request, view):
         return (
