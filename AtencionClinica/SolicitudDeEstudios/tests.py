@@ -1,15 +1,20 @@
 # T009 — Pruebas OrdenEstudio
 
 from datetime import date
+import hashlib
+import shutil
+import tempfile
 
 from django.contrib.auth.models import Group, User
 from django.db import connection
 from django.test import TestCase
+from django.test import override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
-from AtencionClinica.SolicitudDeEstudios.models import OrdenEstudio
+from AtencionClinica.SolicitudDeEstudios.models import OrdenEstudio, ResultadoEstudio
 from GestionDeUsuarios.GestionDePersonalDeSalud.models import PersonalSalud
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 
@@ -24,6 +29,9 @@ def _paciente(ci="11223344"):
         fecha_nacimiento=date(1991, 5, 5),
         sexo="F",
     )
+
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(prefix="t010_media_")
 
 
 class OrdenEstudioModeloTests(TestCase):
@@ -311,3 +319,75 @@ class OrdenEstudioAPITests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         o.refresh_from_db()
         self.assertEqual(o.tecnico_responsable_id, self.ps_lab.pk)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class ResultadoEstudioAPITests(APITestCase):
+    def setUp(self):
+        self.user_med = User.objects.create_user(username="med_t010", password="pw")
+        self.ps_med = PersonalSalud.objects.create(
+            user=self.user_med,
+            item_min_salud="MED-T010-1",
+            rol=PersonalSalud.ROL_MEDICO,
+        )
+        self.p = _paciente("99001122")
+        from AtencionClinica.AperturaFichaYColaDeAtencion.models import Ficha
+
+        self.ficha = Ficha.objects.create(
+            paciente=self.p,
+            profesional_apertura=self.ps_med,
+            estado=Ficha.Estado.CERRADA,
+        )
+        self.consulta = Consulta.objects.create(
+            ficha=self.ficha,
+            medico=self.user_med,
+            motivo_consulta="m",
+            historia_enfermedad_actual="h",
+            impresion_diagnostica="i",
+            codigo_cie10_principal="C01",
+        )
+        self.orden = OrdenEstudio.objects.create(
+            consulta=self.consulta,
+            tipo=OrdenEstudio.TipoEstudio.LAB,
+            descripcion="Perfil hepatico",
+            indicacion_clinica="control",
+            medico_solicitante=self.ps_med,
+        )
+        self.client.force_authenticate(self.user_med)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def test_upload_resultado_calcula_hash(self):
+        payload = b"%PDF-1.4 test file"
+        f = SimpleUploadedFile("resultado.pdf", payload, content_type="application/pdf")
+        r = self.client.post(
+            "/api/resultados-estudio/",
+            {
+                "orden": self.orden.pk,
+                "fecha_resultado": "2026-05-03T12:00:00Z",
+                "archivo_adjunto": f,
+                "valores_resultado": "Hb 13.1",
+            },
+            format="multipart",
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        obj = ResultadoEstudio.objects.get(pk=r.data["id"])
+        self.assertEqual(obj.hash_sha256, hashlib.sha256(payload).hexdigest())
+        self.assertTrue(obj.archivo_adjunto.name.endswith(".pdf"))
+
+    def test_rechaza_tipo_invalido(self):
+        f = SimpleUploadedFile("malicioso.exe", b"MZ", content_type="application/octet-stream")
+        r = self.client.post(
+            "/api/resultados-estudio/",
+            {
+                "orden": self.orden.pk,
+                "fecha_resultado": "2026-05-03T12:00:00Z",
+                "archivo_adjunto": f,
+            },
+            format="multipart",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("archivo_adjunto", r.data)
