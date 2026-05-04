@@ -5,6 +5,27 @@ from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 
 
+class TipoAtencion(models.Model):
+    """
+    Catálogo base para clasificación operativa de atenciones.
+    Se carga por T014 y puede ser referenciado por otros módulos más adelante.
+    """
+
+    nombre = models.CharField(max_length=60, unique=True, verbose_name="Tipo de atención")
+    descripcion = models.CharField(max_length=200, blank=True, default="", verbose_name="Descripción")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    creado_en = models.DateTimeField(auto_now_add=True, verbose_name="Creado en")
+    actualizado_en = models.DateTimeField(auto_now=True, verbose_name="Actualizado en")
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "Tipo de atención"
+        verbose_name_plural = "Tipos de atención"
+
+    def __str__(self):
+        return self.nombre
+
+
 class Ficha(models.Model):
     """
     Ficha de atención: une un paciente con el flujo clínico (triaje → consulta).

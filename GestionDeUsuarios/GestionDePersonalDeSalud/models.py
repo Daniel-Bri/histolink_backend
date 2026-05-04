@@ -1,6 +1,16 @@
 from django.conf import settings
 from django.db import models
 from Tenants.managers import TenantManager
+import unicodedata
+
+
+def normalizar_nombre_especialidad(nombre: str) -> str:
+    base = (nombre or "").strip().lower()
+    base = " ".join(base.split())
+    return "".join(
+        ch for ch in unicodedata.normalize("NFKD", base)
+        if not unicodedata.combining(ch)
+    )
 
 
 class Especialidad(models.Model):
