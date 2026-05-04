@@ -21,8 +21,6 @@ class Consulta(models.Model):
         ("COMPLETADA", "Completada"),
         ("FIRMADA",    "Firmada"),
     ]
-
-<<<<<<< HEAD
     tenant = models.ForeignKey(
         'Tenants.Tenant',
         on_delete=models.CASCADE,
@@ -31,12 +29,8 @@ class Consulta(models.Model):
         related_name='consultas',
         verbose_name='Establecimiento',
     )
-    paciente = models.ForeignKey(
-        Paciente,
-=======
     ficha = models.ForeignKey(
         "AperturaFichaYColaDeAtencion.Ficha",
->>>>>>> e4ae021c (Sprint2 T003	Modelo Ficha: API CRUD + correlativo automatico + transiciones estado + migrar FK a ficha en Triaje y Consulta)
         on_delete=models.CASCADE,
         related_name="consultas",
         verbose_name="Ficha",
