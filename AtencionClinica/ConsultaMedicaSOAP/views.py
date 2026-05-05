@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsMedico
+from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
 from .models import Consulta
 from .permissions import PuedeModificarConsulta
 from .serializers import ConsultaSerializer
@@ -97,4 +98,8 @@ class ConsultaViewSet(viewsets.ModelViewSet):
 
         consulta.estado = 'COMPLETADA'
         consulta.save(update_fields=['estado', 'actualizado_en'])
+        
+        # Auditoría manual para acción clínica
+        registrar_evento('COMPLETAR', consulta, request=request)
+        
         return Response(ConsultaSerializer(consulta, context={'request': request}).data)

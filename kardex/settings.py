@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.BreakGlass_Aprobacion",
     "SeguridadAvanzadaYAdministracion.GestionDePermisosPaciente",
     "SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS",
+    "SeguridadAvanzadaYAdministracion.Auditoria",
 ]
 
 MIDDLEWARE = [
@@ -96,8 +97,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Multitenant — debe ir después de AuthenticationMiddleware
     "Tenants.middleware.TenantMiddleware",
-    # T008 — Auditoría de operaciones de escritura
-    "kardex.middleware.AuditoriaMiddleware",
+    "SeguridadAvanzadaYAdministracion.Auditoria.middleware.AuditMiddleware",
 ]
 
 ROOT_URLCONF = "kardex.urls"

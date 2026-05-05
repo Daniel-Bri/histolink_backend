@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsFarmacia, EsMedico
+from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
 from .models import Receta
 from .serializers import RecetaSerializer
 
@@ -78,6 +79,9 @@ class RecetaViewSet(viewsets.ModelViewSet):
         receta.fecha_dispensacion = timezone.now()
         receta.save()
 
+        # Auditoría manual para dispensación
+        registrar_evento('DISPENSAR', receta, request=request)
+
         return Response(RecetaSerializer(receta, context={'request': request}).data)
 
     @action(detail=True, methods=['patch'], url_path='anular')
@@ -117,5 +121,8 @@ class RecetaViewSet(viewsets.ModelViewSet):
 
         receta.estado = 'ANULADA'
         receta.save()
+
+        # Auditoría manual para anulación
+        registrar_evento('ANULAR', receta, request=request)
 
         return Response(RecetaSerializer(receta, context={'request': request}).data)
