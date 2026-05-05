@@ -54,6 +54,30 @@ class ProfesionalFichaBriefSerializer(serializers.ModelSerializer):
         return full if full else u.get_username()
 
 
+class TriajeResumenSerializer(serializers.Serializer):
+    """Datos compactos del triaje para incluir en respuestas de Ficha."""
+    id                    = serializers.IntegerField()
+    nivel_urgencia        = serializers.CharField()
+    nivel_sugerido_ia     = serializers.CharField(allow_null=True)
+    fue_sobreescrito      = serializers.BooleanField()
+    reglas_duras_aplicadas = serializers.BooleanField()
+    motivo_consulta_triaje = serializers.CharField()
+    hora_triaje           = serializers.DateTimeField()
+    peso_kg               = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True)
+    talla_cm              = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True)
+    frecuencia_cardiaca   = serializers.IntegerField(allow_null=True)
+    frecuencia_respiratoria = serializers.IntegerField(allow_null=True)
+    presion_sistolica     = serializers.IntegerField(allow_null=True)
+    presion_diastolica    = serializers.IntegerField(allow_null=True)
+    temperatura_celsius   = serializers.DecimalField(max_digits=4, decimal_places=1, allow_null=True)
+    saturacion_oxigeno    = serializers.IntegerField(allow_null=True)
+    escala_dolor          = serializers.IntegerField(allow_null=True)
+    glasgow               = serializers.IntegerField(allow_null=True)
+    glucemia              = serializers.DecimalField(max_digits=6, decimal_places=1, allow_null=True)
+    observaciones         = serializers.CharField(allow_null=True, allow_blank=True)
+    justificacion_override = serializers.CharField(allow_null=True, allow_blank=True)
+
+
 class FichaSerializer(serializers.ModelSerializer):
     """
     CRUD principal: alta con paciente_id; lectura enriquecida con paciente y profesional_apertura.
@@ -67,6 +91,7 @@ class FichaSerializer(serializers.ModelSerializer):
         help_text="ID del paciente activo.",
     )
     profesional_apertura = ProfesionalFichaBriefSerializer(read_only=True)
+    triaje_resumen = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Ficha
@@ -81,9 +106,17 @@ class FichaSerializer(serializers.ModelSerializer):
             "fecha_inicio_atencion",
             "fecha_cierre",
             "esta_activa",
+            "triaje_resumen",
             "creado_en",
             "actualizado_en",
         )
+
+    def get_triaje_resumen(self, obj: Ficha):
+        try:
+            t = obj.triaje
+        except Exception:
+            return None
+        return TriajeResumenSerializer(t).data
         read_only_fields = (
             "id",
             "correlativo",

@@ -34,6 +34,7 @@ class FichaViewSet(viewsets.ModelViewSet):
         "paciente",
         "profesional_apertura",
         "profesional_apertura__user",
+        "triaje",
     )
 
     def get_queryset(self):
