@@ -10,12 +10,16 @@ _CIE10_RE = re.compile(r'^[A-Z]\d{2}(\.\d{1,4})?$')
 
 class ConsultaSerializer(serializers.ModelSerializer):
     """Serializer clínico completo para consulta SOAP."""
+    paciente_nombre = serializers.SerializerMethodField(read_only=True)
+    ficha_correlativo = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Consulta
         fields = [
             'id',
-            'paciente',
+            'ficha',
+            'paciente_nombre',
+            'ficha_correlativo',
             'medico',
             'triaje',
             'estado',
@@ -95,3 +99,17 @@ class ConsultaSerializer(serializers.ModelSerializer):
         if request and request.user:
             validated_data['medico'] = request.user
         return super().create(validated_data)
+
+    def get_paciente_nombre(self, obj: Consulta) -> str:
+        try:
+            p = obj.ficha.paciente
+            partes = [p.nombres, p.apellido_paterno, p.apellido_materno]
+            return " ".join(x for x in partes if x).strip()
+        except Exception:
+            return ""
+
+    def get_ficha_correlativo(self, obj: Consulta) -> str:
+        try:
+            return obj.ficha.correlativo or ""
+        except Exception:
+            return ""

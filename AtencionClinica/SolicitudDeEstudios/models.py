@@ -139,7 +139,11 @@ class OrdenEstudio(models.Model):
         if self.estado == self.Estado.COMPLETADA:
             tiene_txt = bool(self.resultado_texto and str(self.resultado_texto).strip())
             tiene_arch = bool(self.resultado_archivo)
-            if not tiene_txt and not tiene_arch:
+            try:
+                tiene_resultado_t010 = bool(getattr(self, "resultado", None))
+            except Exception:
+                tiene_resultado_t010 = False
+            if not tiene_txt and not tiene_arch and not tiene_resultado_t010:
                 raise ValidationError(
                     "Para completar la orden debe informar resultado en texto y/o archivo."
                 )

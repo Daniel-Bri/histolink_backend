@@ -66,6 +66,26 @@ USUARIOS_DEMO = [
         "item_min_salud": "DEMO-ADM-001",
         "especialidad": None,
     },
+    {
+        "username": "demo.laboratorio",
+        "first_name": "Miguel",
+        "last_name": "Barba",
+        "email": "demo.laboratorio@histolink.local",
+        "group": "Laboratorio",
+        "rol": PersonalSalud.ROL_ADMIN,
+        "item_min_salud": "DEMO-LAB-001",
+        "especialidad": None,
+    },
+    {
+        "username": "demo.tecnico",
+        "first_name": "Paola",
+        "last_name": "Arce",
+        "email": "demo.tecnico@histolink.local",
+        "group": "Laboratorio",
+        "rol": PersonalSalud.ROL_ADMIN,
+        "item_min_salud": "DEMO-TEC-001",
+        "especialidad": None,
+    },
 ]
 
 PACIENTES_DEMO = [

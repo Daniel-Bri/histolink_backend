@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -172,7 +173,11 @@ class OrdenEstudioViewSet(viewsets.ModelViewSet):
             orden.resultado_texto = ser.validated_data.get("resultado_texto") or orden.resultado_texto
         if "resultado_archivo" in ser.validated_data and ser.validated_data["resultado_archivo"]:
             orden.resultado_archivo = ser.validated_data["resultado_archivo"]
-        orden.save()
+        try:
+            orden.save()
+        except DjangoValidationError as exc:
+            detail = exc.message_dict if hasattr(exc, "message_dict") else exc.messages
+            return Response(detail, status=status.HTTP_400_BAD_REQUEST)
         return Response(OrdenEstudioDetailSerializer(orden).data, status=status.HTTP_200_OK)
 
 
