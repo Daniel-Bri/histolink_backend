@@ -109,13 +109,42 @@ class Triaje(models.Model):
         verbose_name="Escala de dolor EVA",
         help_text="Escala Visual Analógica: 0 = sin dolor, 10 = dolor máximo insoportable.",
     )
+    glasgow = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(3), MaxValueValidator(15)],
+        verbose_name="Escala de Glasgow",
+        help_text="Escala de coma de Glasgow: 3 (coma profundo) – 15 (normal).",
+    )
+    nivel_sugerido_ia = models.CharField(
+        max_length=10,
+        choices=NIVEL_URGENCIA_CHOICES,
+        null=True, blank=True,
+        verbose_name="Nivel sugerido por IA",
+        help_text="Nivel que el modelo ML sugirió antes de la confirmación de enfermería.",
+    )
     nivel_urgencia = models.CharField(
         max_length=10,
         choices=NIVEL_URGENCIA_CHOICES,
         null=True, blank=True,
         db_index=True,
-        verbose_name="Nivel de urgencia",
-        help_text="Clasificación de urgencia. Puede ser asignada por el modelo IA o manualmente por enfermería.",
+        verbose_name="Nivel de urgencia final",
+        help_text="Nivel confirmado. Igual al sugerido por IA salvo que enfermería lo haya sobreescrito.",
+    )
+    fue_sobreescrito = models.BooleanField(
+        default=False,
+        verbose_name="Sobreescrito por enfermería",
+        help_text="True si la enfermera cambió el nivel sugerido por la IA.",
+    )
+    justificacion_override = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Justificación del cambio",
+        help_text="Obligatorio cuando fue_sobreescrito=True. Queda en auditoría.",
+    )
+    reglas_duras_aplicadas = models.BooleanField(
+        default=False,
+        verbose_name="Reglas duras aplicadas",
+        help_text="True si el modelo forzó un nivel por SpO₂, PA o Glasgow críticos.",
     )
     motivo_consulta_triaje = models.TextField(
         blank=True,
@@ -151,6 +180,7 @@ class Triaje(models.Model):
             models.CheckConstraint(check=models.Q(temperatura_celsius__gte=25)   & models.Q(temperatura_celsius__lte=45),     name="triaje_temp_rango"),
             models.CheckConstraint(check=models.Q(saturacion_oxigeno__gte=50)    & models.Q(saturacion_oxigeno__lte=100),     name="triaje_spo2_rango"),
             models.CheckConstraint(check=models.Q(escala_dolor__gte=0)           & models.Q(escala_dolor__lte=10),            name="triaje_dolor_rango"),
+            models.CheckConstraint(check=models.Q(glasgow__gte=3)               & models.Q(glasgow__lte=15),                 name="triaje_glasgow_rango"),
         ]
 
     def __str__(self):

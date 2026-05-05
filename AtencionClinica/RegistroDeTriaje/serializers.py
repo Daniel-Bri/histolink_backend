@@ -1,11 +1,27 @@
-# CU7 — Serializer de Triaje con validaciones fisiológicas
+# CU7 — Serializers de Triaje con validaciones fisiológicas
 
 from rest_framework import serializers
 from .models import Triaje
 
 
+class ClasificarTriajeInputSerializer(serializers.Serializer):
+    """
+    Paso 1 del flujo de dos pasos.
+    Solo recibe los datos necesarios para clasificar — no guarda nada en BD.
+    """
+    motivo_consulta_triaje  = serializers.CharField(required=False, default="", allow_blank=True)
+    saturacion_oxigeno      = serializers.IntegerField(required=False, min_value=50,  max_value=100)
+    presion_sistolica       = serializers.IntegerField(required=False, min_value=40,  max_value=300)
+    frecuencia_cardiaca     = serializers.IntegerField(required=False, min_value=20,  max_value=300)
+    escala_dolor            = serializers.IntegerField(required=False, min_value=0,   max_value=10)
+    glasgow                 = serializers.IntegerField(required=False, min_value=3,   max_value=15)
+
+
 class TriajeSerializer(serializers.ModelSerializer):
-    """Serializer completo para registro y lectura de triaje."""
+    """
+    Paso 2 del flujo de dos pasos.
+    Recibe el triaje completo con el nivel ya confirmado por enfermería.
+    """
 
     imc              = serializers.SerializerMethodField()
     presion_arterial = serializers.SerializerMethodField()
@@ -26,9 +42,14 @@ class TriajeSerializer(serializers.ModelSerializer):
             'saturacion_oxigeno',
             'glucemia',
             'escala_dolor',
-            'nivel_urgencia',
+            'glasgow',
             'motivo_consulta_triaje',
             'observaciones',
+            'nivel_sugerido_ia',
+            'nivel_urgencia',
+            'fue_sobreescrito',
+            'justificacion_override',
+            'reglas_duras_aplicadas',
             'hora_triaje',
             'imc',
             'presion_arterial',
@@ -66,12 +87,22 @@ class TriajeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La presión diastólica debe estar entre 20 y 200 mmHg.")
         return value
 
+    def validate_glasgow(self, value):
+        if value is not None and not (3 <= value <= 15):
+            raise serializers.ValidationError("La escala de Glasgow debe estar entre 3 y 15.")
+        return value
+
     def validate(self, attrs):
-        sistolica = attrs.get('presion_sistolica')
+        sistolica  = attrs.get('presion_sistolica')
         diastolica = attrs.get('presion_diastolica')
         if sistolica and diastolica and sistolica <= diastolica:
             raise serializers.ValidationError(
                 "La presión sistólica debe ser mayor que la diastólica."
+            )
+
+        if attrs.get('fue_sobreescrito') and not attrs.get('justificacion_override', '').strip():
+            raise serializers.ValidationError(
+                {"justificacion_override": "Requerida cuando se sobreescribe el nivel sugerido por la IA."}
             )
         return attrs
 
