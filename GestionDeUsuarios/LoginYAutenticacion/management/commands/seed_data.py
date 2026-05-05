@@ -734,6 +734,9 @@ class Command(BaseCommand):
                 ant.ultima_actualizacion_por = medico
                 ant.save()
 
+            if not created:
+                continue
+
             # PersonalSalud del médico para apertura de fichas
             try:
                 ps_apertura = medico.perfil_personal_salud
