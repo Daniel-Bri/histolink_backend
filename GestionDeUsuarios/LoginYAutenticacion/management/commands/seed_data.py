@@ -678,10 +678,10 @@ class Command(BaseCommand):
                     "is_active":  True,
                 },
             )
-            if ucreado:
-                user.set_password(datos["password"])
-                user.save()
-                user.groups.add(grupo)
+            user.set_password(datos["password"])
+            user.is_active = True
+            user.save(update_fields=["password", "is_active"])
+            user.groups.add(grupo)
 
             especialidad = especialidades.get(datos["especialidad"]) if datos["especialidad"] else None
 
