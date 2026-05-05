@@ -6,7 +6,7 @@ from rest_framework import serializers
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 from GestionDeUsuarios.GestionDePersonalDeSalud.models import PersonalSalud
 
-from .models import OrdenEstudio
+from .models import OrdenEstudio, ResultadoEstudio
 
 User = get_user_model()
 
@@ -224,3 +224,51 @@ class OrdenEstudioCreateResponseSerializer(serializers.ModelSerializer):
 
     def get_medico_solicitante(self, obj: OrdenEstudio) -> str:
         return _nombre_personal(obj.medico_solicitante)
+
+
+class ResultadoEstudioSerializer(serializers.ModelSerializer):
+    hash_sha256 = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = ResultadoEstudio
+        fields = (
+            "id",
+            "orden",
+            "ingresado_por",
+            "fecha_resultado",
+            "archivo_adjunto",
+            "nombre_archivo",
+            "valores_resultado",
+            "interpretacion_medica",
+            "interpretado_por",
+            "fecha_interpretacion",
+            "hash_sha256",
+            "creado_en",
+        )
+        read_only_fields = ("id", "ingresado_por", "nombre_archivo", "hash_sha256", "creado_en")
+
+    def validate_archivo_adjunto(self, value):
+        if not value:
+            return value
+        allowed_types = {
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        }
+        allowed_ext = (".pdf", ".jpg", ".jpeg", ".png", ".webp")
+
+        content_type = (getattr(value, "content_type", "") or "").lower()
+        filename = (value.name or "").lower()
+        if content_type not in allowed_types and not filename.endswith(allowed_ext):
+            raise serializers.ValidationError("Solo se permiten archivos PDF o imágenes (JPG, PNG, WEBP).")
+
+        max_size = 10 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("El archivo excede el tamaño máximo permitido de 10 MB.")
+        return value
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        validated_data["ingresado_por"] = request.user
+        return super().create(validated_data)

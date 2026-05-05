@@ -5,6 +5,7 @@ from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, User
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status

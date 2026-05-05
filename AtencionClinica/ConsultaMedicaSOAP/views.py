@@ -15,7 +15,14 @@ class ConsultaViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultaSerializer
 
     def get_queryset(self):
-        qs = Consulta.objects.select_related('paciente', 'medico', 'firmada_por').order_by('-creado_en')
+        qs = Consulta.objects.select_related(
+            'tenant',
+            'ficha',
+            'ficha__paciente',
+            'medico',
+            'triaje',
+            'firmada_por',
+        ).order_by('-creado_en')
 
         user = self.request.user
         if not user.is_authenticated:
@@ -34,7 +41,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
 
         paciente_id = params.get('paciente')
         if paciente_id:
-            qs = qs.filter(paciente_id=paciente_id)
+            qs = qs.filter(ficha__paciente_id=paciente_id)
 
         estado = params.get('estado')
         if estado:

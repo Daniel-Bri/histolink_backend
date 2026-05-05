@@ -1,4 +1,6 @@
-# CU10 - Solicitud de Estudios y Carga de Resultados (T009 OrdenEstudio)
+# CU10 - Solicitud de Estudios y Carga de Resultados (T009/T010)
+
+import hashlib
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -137,7 +139,11 @@ class OrdenEstudio(models.Model):
         if self.estado == self.Estado.COMPLETADA:
             tiene_txt = bool(self.resultado_texto and str(self.resultado_texto).strip())
             tiene_arch = bool(self.resultado_archivo)
-            if not tiene_txt and not tiene_arch:
+            try:
+                tiene_resultado_t010 = bool(getattr(self, "resultado", None))
+            except Exception:
+                tiene_resultado_t010 = False
+            if not tiene_txt and not tiene_arch and not tiene_resultado_t010:
                 raise ValidationError(
                     "Para completar la orden debe informar resultado en texto y/o archivo."
                 )
@@ -241,7 +247,12 @@ class ResultadoEstudio(models.Model):
         verbose_name="Ingresado por",
     )
     fecha_resultado = models.DateTimeField(verbose_name="Fecha del resultado")
-    archivo_adjunto = models.CharField(max_length=512, blank=True, default="", verbose_name="Archivo adjunto")
+    archivo_adjunto = models.FileField(
+        upload_to="resultados_estudios_adjuntos/%Y/%m/",
+        blank=True,
+        null=True,
+        verbose_name="Archivo adjunto",
+    )
     nombre_archivo = models.CharField(max_length=255, blank=True, default="", verbose_name="Nombre del archivo")
     valores_resultado = models.TextField(blank=True, default="", verbose_name="Valores del resultado")
     interpretacion_medica = models.TextField(blank=True, default="", verbose_name="Interpretación médica")
@@ -254,7 +265,7 @@ class ResultadoEstudio(models.Model):
         verbose_name="Interpretado por",
     )
     fecha_interpretacion = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de interpretación")
-    hash_archivo = models.CharField(max_length=64, blank=True, default="", db_index=True, verbose_name="Hash del archivo")
+    hash_sha256 = models.CharField(max_length=64, blank=True, default="", db_index=True, verbose_name="Hash SHA-256")
     creado_en = models.DateTimeField(auto_now_add=True, verbose_name="Creado en")
 
     class Meta:
@@ -263,3 +274,21 @@ class ResultadoEstudio(models.Model):
 
     def __str__(self):
         return f"Resultado de {self.orden}"
+
+    def _calcular_hash_archivo(self) -> str:
+        if not self.archivo_adjunto:
+            return ""
+        sha = hashlib.sha256()
+        for chunk in self.archivo_adjunto.chunks():
+            sha.update(chunk)
+        return sha.hexdigest()
+
+    def save(self, *args, **kwargs):
+        if self.archivo_adjunto:
+            self.nombre_archivo = self.archivo_adjunto.name.split("/")[-1]
+            self.hash_sha256 = self._calcular_hash_archivo()
+        else:
+            self.hash_sha256 = ""
+            if not self.nombre_archivo:
+                self.nombre_archivo = ""
+        super().save(*args, **kwargs)

@@ -6,12 +6,10 @@ Este módulo expone endpoints para:
 - Dispensar recetas (farmacia).
 - Anular recetas (médico creador o Admin/Director).
 """
-
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsFarmacia, EsMedico
 from .models import Receta
 from .serializers import RecetaSerializer

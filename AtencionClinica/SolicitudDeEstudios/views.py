@@ -2,13 +2,15 @@
 
 from typing import Optional
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import OrdenEstudio
+from .models import OrdenEstudio, ResultadoEstudio
 from .permissions import OrdenEstudioPermission, es_admin_o_super, es_medico
 from .serializers import (
     OrdenEstudioAdminUpdateSerializer,
@@ -18,6 +20,7 @@ from .serializers import (
     OrdenEstudioDetailSerializer,
     OrdenEstudioListSerializer,
     OrdenEstudioUpdateMedicoSerializer,
+    ResultadoEstudioSerializer,
     personal_desde_usuario,
 )
 
@@ -170,5 +173,24 @@ class OrdenEstudioViewSet(viewsets.ModelViewSet):
             orden.resultado_texto = ser.validated_data.get("resultado_texto") or orden.resultado_texto
         if "resultado_archivo" in ser.validated_data and ser.validated_data["resultado_archivo"]:
             orden.resultado_archivo = ser.validated_data["resultado_archivo"]
-        orden.save()
+        try:
+            orden.save()
+        except DjangoValidationError as exc:
+            detail = exc.message_dict if hasattr(exc, "message_dict") else exc.messages
+            return Response(detail, status=status.HTTP_400_BAD_REQUEST)
         return Response(OrdenEstudioDetailSerializer(orden).data, status=status.HTTP_200_OK)
+
+
+class ResultadoEstudioViewSet(viewsets.ModelViewSet):
+    queryset = ResultadoEstudio.objects.select_related("orden", "ingresado_por", "interpretado_por")
+    serializer_class = ResultadoEstudioSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        orden_id = self.request.query_params.get("orden")
+        if orden_id:
+            qs = qs.filter(orden_id=orden_id)
+        return qs.order_by("-creado_en")

@@ -21,7 +21,6 @@ class Consulta(models.Model):
         ("COMPLETADA", "Completada"),
         ("FIRMADA",    "Firmada"),
     ]
-
     tenant = models.ForeignKey(
         'Tenants.Tenant',
         on_delete=models.CASCADE,
