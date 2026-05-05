@@ -1,0 +1,224 @@
+{
+  "info": {
+    "_postman_id": "sprint2-histolink-atencion",
+    "name": "Sprint 2 - Atención Clínica",
+    "description": "Colección Sprint 2: fichas, órdenes de estudio (implementadas); triaje/consultas/recetas marcadas como pendientes de cableado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"medico1\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var j = pm.response.json();",
+                  "  if (j.access) { pm.collectionVariables.set('token', j.access); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fichas",
+      "item": [
+        {
+          "name": "Listar fichas",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/fichas/"
+          }
+        },
+        {
+          "name": "Crear ficha",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente_id\": 1\n}"
+            },
+            "url": "{{base_url}}/api/fichas/"
+          }
+        },
+        {
+          "name": "Detalle ficha",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/fichas/1/"
+          }
+        },
+        {
+          "name": "PATCH ficha",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/api/fichas/1/"
+          }
+        },
+        {
+          "name": "Cambiar estado ficha",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_TRIAJE\"\n}"
+            },
+            "url": "{{base_url}}/api/fichas/1/cambiar-estado/"
+          }
+        },
+        {
+          "name": "Eliminar ficha (lógico)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/fichas/1/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Triaje (pendiente cableado)",
+      "item": [
+        {
+          "name": "POST triaje [no registrado aún]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ficha\": 1,\n  \"motivo_consulta_triaje\": \"Dolor\"\n}"
+            },
+            "url": "{{base_url}}/api/triaje/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultas (pendiente cableado)",
+      "item": [
+        {
+          "name": "POST consulta [no registrado aún]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ficha\": 1,\n  \"motivo_consulta\": \"x\",\n  \"historia_enfermedad_actual\": \"y\",\n  \"impresion_diagnostica\": \"z\",\n  \"codigo_cie10_principal\": \"A00\"\n}"
+            },
+            "url": "{{base_url}}/api/consultas/"
+          }
+        },
+        {
+          "name": "PATCH firmar [no registrado aún]",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/consultas/1/firmar/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recetas (pendiente cableado)",
+      "item": [
+        {
+          "name": "POST receta [no registrado aún]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consulta\": 1,\n  \"detalles\": []\n}"
+            },
+            "url": "{{base_url}}/api/recetas/"
+          }
+        },
+        {
+          "name": "PATCH dispensar [no registrado aún]",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/recetas/1/dispensar/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Órdenes de estudio",
+      "item": [
+        {
+          "name": "Listar órdenes",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/ordenes-estudio/?pendientes=true"
+          }
+        },
+        {
+          "name": "Crear orden",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consulta_id\": 1,\n  \"tipo\": \"LAB\",\n  \"descripcion\": \"Hemograma\",\n  \"indicacion_clinica\": \"Control\",\n  \"urgente\": false\n}"
+            },
+            "url": "{{base_url}}/api/ordenes-estudio/"
+          }
+        },
+        {
+          "name": "Detalle orden",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/ordenes-estudio/1/"
+          }
+        },
+        {
+          "name": "Cola laboratorio",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/ordenes-estudio/cola-laboratorio/"
+          }
+        },
+        {
+          "name": "Cambiar estado orden",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_PROCESO\",\n  \"tecnico_responsable_id\": 1\n}"
+            },
+            "url": "{{base_url}}/api/ordenes-estudio/1/cambiar-estado/"
+          }
+        }
+      ]
+    }
+  ]
+}

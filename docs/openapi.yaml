@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Información Clínico - Sprint 2
+  description: |
+    API del flujo de atención clínica. Rutas bajo `/api/fichas/` y `/api/ordenes-estudio/` están cableadas en `kardex/urls.py`.
+    Las rutas `/api/triaje/`, `/api/consultas/` y `/api/recetas/` se documentan como contrato previsto; marcar `x-not-implemented` donde aplique.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Desarrollo local
+
+tags:
+  - name: Auth
+  - name: Fichas
+  - name: Triaje
+    description: No registrado en urls del proyecto (contrato previsto)
+  - name: Consultas
+    description: No registrado (contrato previsto)
+  - name: Recetas
+    description: No registrado (contrato previsto)
+  - name: OrdenesEstudio
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      additionalProperties: true
+      example:
+        detail: "No autorizado."
+
+    Ficha:
+      type: object
+      properties:
+        id:
+          type: integer
+        correlativo:
+          type: string
+        estado:
+          type: string
+          enum: [ABIERTA, EN_TRIAJE, EN_ATENCION, CERRADA, CANCELADA]
+        fecha_apertura:
+          type: string
+          format: date-time
+        paciente:
+          type: object
+        profesional_apertura:
+          type: object
+        esta_activa:
+          type: boolean
+
+    FichaCreate:
+      type: object
+      required: [paciente_id]
+      properties:
+        paciente_id:
+          type: integer
+
+    FichaCambiarEstado:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+
+    OrdenEstudioListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        correlativo_orden:
+          type: string
+        tipo:
+          type: string
+        urgente:
+          type: boolean
+        estado:
+          type: string
+        fecha_solicitud:
+          type: string
+          format: date-time
+        paciente_nombre:
+          type: string
+
+    OrdenEstudioCreate:
+      type: object
+      required: [consulta_id, tipo, descripcion, indicacion_clinica]
+      properties:
+        consulta_id:
+          type: integer
+        tipo:
+          type: string
+        descripcion:
+          type: string
+        indicacion_clinica:
+          type: string
+        urgente:
+          type: boolean
+          default: false
+        motivo_urgencia:
+          type: string
+
+    CambiarEstadoOrden:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [SOLICITADA, EN_PROCESO, COMPLETADA, ANULADA]
+        resultado_texto:
+          type: string
+        resultado_archivo:
+          type: string
+          format: binary
+        tecnico_responsable_id:
+          type: integer
+          nullable: true
+
+    ColaLaboratorio:
+      type: object
+      properties:
+        urgentes:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrdenEstudioListItem"
+        normales:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrdenEstudioListItem"
+        en_proceso:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrdenEstudioListItem"
+        total_pendientes:
+          type: integer
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/login/:
+    post:
+      tags: [Auth]
+      summary: Login (JWT + datos según vista del proyecto)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Tokens emitidos
+        "401":
+          description: Credenciales inválidas
+
+  /api/fichas/:
+    get:
+      tags: [Fichas]
+      summary: Listar fichas
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: paciente
+          in: query
+          schema:
+            type: integer
+        - name: en_curso
+          in: query
+          schema:
+            type: boolean
+        - name: fecha_desde
+          in: query
+          schema:
+            type: string
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: string
+        - name: incluir_inactivas
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista de fichas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ficha"
+    post:
+      tags: [Fichas]
+      summary: Crear ficha
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FichaCreate"
+      responses:
+        "201":
+          description: Creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ficha"
+
+  /api/fichas/{id}/:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Fichas]
+      summary: Detalle ficha
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: No encontrada
+    put:
+      tags: [Fichas]
+      summary: Actualizar ficha (completo)
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags: [Fichas]
+      summary: Actualizar ficha (parcial)
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags: [Fichas]
+      summary: Borrado lógico (esta_activa)
+      responses:
+        "204":
+          description: Sin contenido
+
+  /api/fichas/{id}/cambiar-estado/:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    patch:
+      tags: [Fichas]
+      summary: Cambiar estado de ficha
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FichaCambiarEstado"
+      responses:
+        "200":
+          description: Ficha actualizada
+
+  /api/triaje/:
+    x-not-implemented: true
+    get:
+      tags: [Triaje]
+      summary: "[Previsto] Listar triajes"
+      responses:
+        "501":
+          description: No implementado en urls
+    post:
+      tags: [Triaje]
+      summary: "[Previsto] Crear triaje (puede incluir campos IA en respuesta)"
+      responses:
+        "501":
+          description: No implementado en urls
+
+  /api/consultas/:
+    x-not-implemented: true
+    get:
+      tags: [Consultas]
+      summary: "[Previsto] Listar consultas SOAP"
+      responses:
+        "501":
+          description: No implementado
+    post:
+      tags: [Consultas]
+      summary: "[Previsto] Crear consulta"
+      responses:
+        "501":
+          description: No implementado
+
+  /api/consultas/{id}/firmar/:
+    x-not-implemented: true
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    patch:
+      tags: [Consultas]
+      summary: "[Previsto] Firmar consulta"
+      responses:
+        "501":
+          description: No implementado
+
+  /api/recetas/:
+    x-not-implemented: true
+    get:
+      tags: [Recetas]
+      summary: "[Previsto] Listar recetas"
+      responses:
+        "501":
+          description: No implementado
+    post:
+      tags: [Recetas]
+      summary: "[Previsto] Emitir receta"
+      responses:
+        "501":
+          description: No implementado
+
+  /api/recetas/{id}/dispensar/:
+    x-not-implemented: true
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    patch:
+      tags: [Recetas]
+      summary: "[Previsto] Dispensar receta"
+      responses:
+        "501":
+          description: No implementado
+
+  /api/ordenes-estudio/:
+    get:
+      tags: [OrdenesEstudio]
+      summary: Listar órdenes de estudio
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: urgente
+          in: query
+          schema:
+            type: boolean
+        - name: solo_urgentes
+          in: query
+          schema:
+            type: boolean
+        - name: pendientes
+          in: query
+          schema:
+            type: boolean
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: consulta
+          in: query
+          schema:
+            type: integer
+        - name: fecha_desde
+          in: query
+          schema:
+            type: string
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrdenEstudioListItem"
+    post:
+      tags: [OrdenesEstudio]
+      summary: Crear orden de estudio
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrdenEstudioCreate"
+      responses:
+        "201":
+          description: Creada
+        "400":
+          description: Validación (ej. urgente sin motivo)
+
+  /api/ordenes-estudio/cola-laboratorio/:
+    get:
+      tags: [OrdenesEstudio]
+      summary: Cola prioritaria laboratorio
+      responses:
+        "200":
+          description: Cola
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ColaLaboratorio"
+        "403":
+          description: Solo Laboratorio / admin
+
+  /api/ordenes-estudio/{id}/:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [OrdenesEstudio]
+      summary: Detalle orden
+      responses:
+        "200":
+          description: OK
+    put:
+      tags: [OrdenesEstudio]
+      summary: Actualizar orden
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags: [OrdenesEstudio]
+      summary: Actualizar parcial
+      responses:
+        "200":
+          description: OK
+
+  /api/ordenes-estudio/{id}/cambiar-estado/:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    patch:
+      tags: [OrdenesEstudio]
+      summary: Cambiar estado (laboratorio)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CambiarEstadoOrden"
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CambiarEstadoOrden"
+      responses:
+        "200":
+          description: Actualizada
+        "403":
+          description: Sin permiso

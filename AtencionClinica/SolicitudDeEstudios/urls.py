@@ -1,7 +1,13 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import OrdenEstudioViewSet
 
 app_name = "SolicitudDeEstudios"
 
+router = DefaultRouter()
+router.register(r"ordenes-estudio", OrdenEstudioViewSet, basename="orden-estudio")
+
 urlpatterns = [
-    # Endpoints de CU10 - Solicitud de Estudios y Carga de Resultados — pendientes de implementación.
+    path("", include(router.urls)),
 ]
