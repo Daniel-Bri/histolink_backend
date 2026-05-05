@@ -1,13 +1,14 @@
-# CU9 — Tests para PATCH /api/clinica/recetas/{id}/dispensar/
-# T011: solo rol Farmacia puede dispensar
+# CU9 — Tests para EmisionDeRecetaMedica
+# Cobertura: dispensar (detallado), anular, permisos RBAC, transiciones de estado.
 
 from datetime import date
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, User
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
@@ -79,8 +80,6 @@ class DispensarRecetaTests(RecetaTestBase):
         self.receta = _crear_receta(self.consulta, self.user_medico)
         self.url = reverse('EmisionDeRecetaMedica:receta-dispensar', args=[self.receta.id])
 
-    # ── Caso exitoso ─────────────────────────────────────────────────────────
-
     def test_farmacia_dispensa_receta_emitida_ok(self):
         self.client.force_authenticate(user=self.user_farmacia)
         response = self.client.patch(self.url)
@@ -116,8 +115,6 @@ class DispensarRecetaTests(RecetaTestBase):
         self.assertIn('numero_receta', response.data)
         self.assertIn('fecha_dispensacion', response.data)
 
-    # ── Control de acceso ─────────────────────────────────────────────────────
-
     def test_sin_autenticacion_devuelve_401(self):
         response = self.client.patch(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -136,8 +133,6 @@ class DispensarRecetaTests(RecetaTestBase):
         self.client.force_authenticate(user=self.user_sin_rol)
         response = self.client.patch(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    # ── Reglas de negocio ─────────────────────────────────────────────────────
 
     def test_dispensar_receta_ya_dispensada_devuelve_400(self):
         self.receta.estado            = 'DISPENSADA'
@@ -175,7 +170,7 @@ class DispensarRecetaTests(RecetaTestBase):
         self.client.patch(self.url)
 
         self.receta.refresh_from_db()
-        self.assertEqual(self.receta.estado, 'ANULADA')  # no cambió
+        self.assertEqual(self.receta.estado, 'ANULADA')
 
     def test_mensaje_error_indica_estado_actual(self):
         self.receta.estado = 'DISPENSADA'
@@ -187,6 +182,45 @@ class DispensarRecetaTests(RecetaTestBase):
         response = self.client.patch(self.url)
 
         self.assertIn('DISPENSADA', response.data['error'])
+
+
+# ── Tests del endpoint anular ─────────────────────────────────────────────────
+
+class AnularRecetaTests(RecetaTestBase):
+    """PATCH /api/clinica/recetas/{id}/anular/"""
+
+    def setUp(self):
+        self.receta = _crear_receta(self.consulta, self.user_medico)
+        self.url = reverse('EmisionDeRecetaMedica:receta-anular', args=[self.receta.id])
+
+    def test_medico_creador_puede_anular_receta_emitida(self):
+        self.client.force_authenticate(user=self.user_medico)
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['estado'], 'ANULADA')
+
+    def test_no_se_puede_anular_una_receta_dispensada(self):
+        self.receta.estado = 'DISPENSADA'
+        self.receta.dispensada_por = self.user_farmacia
+        self.receta.fecha_dispensacion = timezone.now()
+        self.receta.save()
+
+        self.client.force_authenticate(user=self.user_medico)
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_farmacia_no_puede_anular(self):
+        self.client.force_authenticate(user=self.user_farmacia)
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_restriccion_estado_emitida_en_modelo(self):
+        receta = Receta.objects.create(
+            consulta=self.consulta,
+            medico=self.user_medico,
+            numero_receta='REC-2026-99999',
+        )
+        self.assertEqual(receta.estado, 'EMITIDA')
 
 
 # ── Tests del permiso EsFarmacia ─────────────────────────────────────────────
