@@ -55,8 +55,8 @@ class TriajeViewSet(viewsets.ModelViewSet):
     filter_backends   = [filters.SearchFilter]
     search_fields     = [
         "motivo_consulta_triaje",
-        "paciente__ci",
-        "paciente__apellido_paterno",
+        "ficha__paciente__ci",
+        "ficha__paciente__apellido_paterno",
     ]
     # Triaje es inmutable después de creado — no PUT/PATCH/DELETE
     http_method_names = ["get", "post", "head", "options"]
@@ -67,11 +67,11 @@ class TriajeViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
 
     def get_queryset(self):
-        qs = Triaje.objects.select_related("paciente", "enfermera").order_by("-hora_triaje")
+        qs = Triaje.objects.select_related("ficha__paciente", "enfermera").order_by("-hora_triaje")
 
         paciente_id = self.request.query_params.get("paciente")
         if paciente_id:
-            qs = qs.filter(paciente_id=paciente_id)
+            qs = qs.filter(ficha__paciente_id=paciente_id)
 
         nivel = self.request.query_params.get("nivel_urgencia")
         if nivel:

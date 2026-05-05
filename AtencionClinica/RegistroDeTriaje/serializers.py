@@ -1,6 +1,8 @@
 # CU7 — Serializers de Triaje con validaciones fisiológicas
 
 from rest_framework import serializers
+
+from AtencionClinica.AperturaFichaYColaDeAtencion.models import Ficha
 from .models import Triaje
 
 
@@ -25,12 +27,15 @@ class TriajeSerializer(serializers.ModelSerializer):
 
     imc              = serializers.SerializerMethodField()
     presion_arterial = serializers.SerializerMethodField()
+    ficha_detail     = serializers.SerializerMethodField(read_only=True)
+    ficha            = serializers.PrimaryKeyRelatedField(queryset=Ficha.objects.all())
 
     class Meta:
         model  = Triaje
         fields = [
             'id',
-            'paciente',
+            'ficha',
+            'ficha_detail',
             'enfermera',
             'peso_kg',
             'talla_cm',
@@ -54,13 +59,31 @@ class TriajeSerializer(serializers.ModelSerializer):
             'imc',
             'presion_arterial',
         ]
-        read_only_fields = ['id', 'hora_triaje', 'enfermera']
+        read_only_fields = ['id', 'hora_triaje', 'enfermera', 'ficha_detail']
 
     def get_imc(self, obj):
         return obj.imc
 
     def get_presion_arterial(self, obj):
         return obj.presion_arterial
+
+    def get_ficha_detail(self, obj):
+        try:
+            f = obj.ficha
+            p = f.paciente
+            nombre = f"{p.nombres} {p.apellido_paterno}".strip()
+            return {
+                'id': f.id,
+                'correlativo': f.correlativo,
+                'estado': f.estado,
+                'paciente': {
+                    'id': p.id,
+                    'nombre_completo': nombre,
+                    'ci': p.ci,
+                },
+            }
+        except Exception:
+            return None
 
     def validate_escala_dolor(self, value):
         if value is not None and not (0 <= value <= 10):
