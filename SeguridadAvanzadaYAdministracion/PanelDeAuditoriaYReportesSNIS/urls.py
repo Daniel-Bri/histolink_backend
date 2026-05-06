@@ -1,7 +1,8 @@
 from django.urls import path
+from .views import RegistroAuditoriaListView
 
 app_name = "PanelDeAuditoriaYReportesSNIS"
 
 urlpatterns = [
-    # Endpoints de CU20 - Panel de Auditoría y Reportes SNIS — pendientes de implementación.
+    path('', RegistroAuditoriaListView.as_view(), name='auditoria-list'),
 ]
