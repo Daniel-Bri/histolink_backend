@@ -50,6 +50,9 @@ urlpatterns = [
 
     # Reportes — CU22: Producción y Flujo de Atención (T037/T038/T039)
     path("api/reportes/", include("SeguridadAvanzadaYAdministracion.ReporteProduccion.urls")),
+
+    # SeguridadAvanzadaYAdministracion — CU20: Panel de Auditoría y Reportes SNIS (T036)
+    path("api/auditoria/", include("SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS.urls")),
 ]
 
 if settings.DEBUG:
