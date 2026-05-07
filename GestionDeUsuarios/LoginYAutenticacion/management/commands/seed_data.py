@@ -16,6 +16,7 @@ from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
+from AtencionClinica.AperturaFichaYColaDeAtencion.models import Ficha
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 from AtencionClinica.RegistroDeTriaje.models import Triaje
 from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import Antecedente
@@ -677,10 +678,10 @@ class Command(BaseCommand):
                     "is_active":  True,
                 },
             )
-            if ucreado:
-                user.set_password(datos["password"])
-                user.save()
-                user.groups.add(grupo)
+            user.set_password(datos["password"])
+            user.is_active = True
+            user.save(update_fields=["password", "is_active"])
+            user.groups.add(grupo)
 
             especialidad = especialidades.get(datos["especialidad"]) if datos["especialidad"] else None
 
@@ -733,25 +734,48 @@ class Command(BaseCommand):
                 ant.ultima_actualizacion_por = medico
                 ant.save()
 
-            # Triajes
+            if not created:
+                continue
+
+            # PersonalSalud del médico para apertura de fichas
+            try:
+                ps_apertura = medico.perfil_personal_salud
+            except Exception:
+                ps_apertura = PersonalSalud.objects.filter(user=medico).first()
+
+            # Triajes — cada triaje necesita su propia Ficha (OneToOne)
             triajes_creados = []
+            fichas_creadas = []
             for t_data in datos.get("triajes", []):
-                triaje, tcreado = Triaje.objects.get_or_create(
+                ficha = Ficha.objects.create(
                     paciente=paciente,
-                    motivo_consulta_triaje=t_data["motivo_consulta_triaje"],
+                    profesional_apertura=ps_apertura,
+                    estado=Ficha.Estado.CERRADA,
+                )
+                fichas_creadas.append(ficha)
+                triaje, _ = Triaje.objects.get_or_create(
+                    ficha=ficha,
                     defaults={
                         "tenant":    tenant,
                         "enfermera": enfermera or medico,
-                        **{k: v for k, v in t_data.items() if k != "motivo_consulta_triaje"},
+                        **t_data,
                     },
                 )
                 triajes_creados.append(triaje)
 
-            # Consultas
+            # Consultas — vinculadas a la Ficha del triaje correspondiente
             for i, c_data in enumerate(datos.get("consultas", [])):
                 triaje_asoc = triajes_creados[i] if i < len(triajes_creados) else None
+                if i < len(fichas_creadas):
+                    ficha_asoc = fichas_creadas[i]
+                else:
+                    ficha_asoc = Ficha.objects.create(
+                        paciente=paciente,
+                        profesional_apertura=ps_apertura,
+                        estado=Ficha.Estado.CERRADA,
+                    )
                 Consulta.objects.get_or_create(
-                    paciente=paciente,
+                    ficha=ficha_asoc,
                     codigo_cie10_principal=c_data["codigo_cie10_principal"],
                     defaults={
                         "tenant": tenant,

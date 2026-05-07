@@ -110,30 +110,43 @@ class TriajeViewSet(viewsets.ModelViewSet):
 
         try:
             from ml.servicio_ml import ServicioML
-            svc      = ServicioML.obtener_instancia()
+            svc       = ServicioML.obtener_instancia()
             resultado = svc.clasificar_triaje(
                 texto_sintomas=data.get("motivo_consulta_triaje", ""),
                 signos_vitales=signos,
-                # triaje_id omitido: no queremos que el servicio escriba en BD
             )
-            nivel_sugerido = _COLORES.get(resultado.get("nivel_predicho"), "AMARILLO")
+
+            ml_degradado = bool(resultado.get("error")) or not resultado.get("nivel_predicho")
+            if ml_degradado:
+                nivel_final_num, nivel_final_str = _clasificar_por_signos_vitales(signos)
+                confianza = "—"
+            else:
+                nivel_ia_num    = resultado["nivel_predicho"]
+                nivel_minimo, _ = _nivel_minimo_por_reglas(signos)
+                nivel_final_num = min(nivel_ia_num, nivel_minimo)
+                nivel_final_str = _COLORES.get(nivel_final_num, "AMARILLO")
+                confianza       = resultado.get("confianza_pct", "")
 
             return Response({
-                "nivel_sugerido":        nivel_sugerido,
-                "nivel_numerico":        resultado.get("nivel_predicho"),
+                "nivel_sugerido":         nivel_final_str,
+                "nivel_numerico":         nivel_final_num,
                 "reglas_duras_aplicadas": reglas_duras,
-                "confianza_pct":         resultado.get("confianza_pct", ""),
-                "ajuste_signos":         resultado.get("ajuste_signos", ""),
-                "probabilidades":        resultado.get("probabilidades", {}),
+                "confianza_pct":          confianza,
+                "ajuste_signos":          resultado.get("ajuste_signos", ""),
+                "probabilidades":         resultado.get("probabilidades", {}),
+                "ml_degradado":           ml_degradado,
             }, status=status.HTTP_200_OK)
 
         except Exception as exc:
             logger.warning("Error en clasificación IA (sin guardar): %s", exc)
+            nivel_final_num, nivel_final_str = _clasificar_por_signos_vitales(signos)
             return Response({
-                "nivel_sugerido":        "AMARILLO",
-                "nivel_numerico":        3,
+                "nivel_sugerido":         nivel_final_str,
+                "nivel_numerico":         nivel_final_num,
                 "reglas_duras_aplicadas": reglas_duras,
-                "error":                 str(exc),
+                "confianza_pct":          "—",
+                "ml_degradado":           True,
+                "error":                  str(exc),
             }, status=status.HTTP_200_OK)
 
     # ── Paso 2: POST /api/triaje/ ───────────────────────────────────────────
@@ -157,25 +170,79 @@ class TriajeViewSet(viewsets.ModelViewSet):
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _evaluar_reglas_duras(signos: dict) -> bool:
+def _clasificar_por_signos_vitales(signos: dict) -> tuple[int, str]:
     """
-    Retorna True si algún signo vital activa una regla dura clínica.
-    Espejo de las reglas del modelo ML — usado para informar al frontend
-    que la enfermera NO puede bajar el nivel por debajo del forzado.
+    Clasificación completa por signos vitales (usado cuando ML no disponible).
+    Cubre los 5 niveles: ROJO→AZUL. Número menor = mayor urgencia.
     """
-    spo2  = signos.get("saturacion_oxigeno")
-    pas   = signos.get("presion_sistolica")
-    gcs   = signos.get("glasgow")
-    eva   = signos.get("escala_dolor")
+    spo2 = signos.get("saturacion_oxigeno")
+    pas  = signos.get("presion_sistolica")
+    fc   = signos.get("frecuencia_cardiaca")
+    fr   = signos.get("frecuencia_respiratoria")
+    temp = signos.get("temperatura_celsius")
+    eva  = signos.get("escala_dolor")
+    gcs  = signos.get("glasgow")
 
+    # ROJO — amenaza vital inmediata
+    if spo2 is not None and spo2 < 90:           return 1, "ROJO"
+    if pas  is not None and (pas < 80 or pas > 200): return 1, "ROJO"
+    if gcs  is not None and gcs <= 8:            return 1, "ROJO"
+
+    # NARANJA — muy urgente
+    if spo2 is not None and spo2 < 94:               return 2, "NARANJA"
+    if eva  is not None and eva >= 9:                 return 2, "NARANJA"
+    if fc   is not None and (fc > 150 or fc < 40):   return 2, "NARANJA"
+    if fr   is not None and fr > 30:                  return 2, "NARANJA"
+    if temp is not None and (temp > 39.5 or temp < 35.0): return 2, "NARANJA"
+    if pas  is not None and (pas < 90 or pas > 180): return 2, "NARANJA"
+    if gcs  is not None and gcs <= 13:               return 2, "NARANJA"
+
+    # AMARILLO — urgente
+    if fc   is not None and (fc > 100 or fc < 50):   return 3, "AMARILLO"
+    if fr   is not None and (fr > 20 or fr < 10):    return 3, "AMARILLO"
+    if temp is not None and (temp > 38.0 or temp < 36.0): return 3, "AMARILLO"
+    if eva  is not None and eva >= 5:                 return 3, "AMARILLO"
+    if spo2 is not None and spo2 < 96:               return 3, "AMARILLO"
+    if pas  is not None and (pas < 100 or pas > 160): return 3, "AMARILLO"
+
+    # VERDE — poco urgente
+    if eva  is not None and eva >= 2:                 return 4, "VERDE"
+    if fc   is not None and (fc > 90 or fc < 55):    return 4, "VERDE"
+    if temp is not None and temp > 37.5:              return 4, "VERDE"
+
+    # AZUL — no urgente, todos los parámetros normales
+    return 5, "AZUL"
+
+
+def _nivel_minimo_por_reglas(signos: dict) -> tuple[int, str]:
+    """
+    Devuelve (nivel_numerico, nivel_str) mínimo forzado por reglas clínicas duras.
+    Número más bajo = mayor urgencia (1=ROJO, 2=NARANJA, 3=AMARILLO...).
+    Si no hay reglas activas devuelve (5, 'AZUL') — sin restricción.
+    """
+    spo2 = signos.get("saturacion_oxigeno")
+    pas  = signos.get("presion_sistolica")
+    gcs  = signos.get("glasgow")
+    eva  = signos.get("escala_dolor")
+
+    # Reglas ROJO (nivel 1)
     if spo2 is not None and spo2 < 90:
-        return True
+        return 1, "ROJO"
     if pas is not None and (pas < 80 or pas > 200):
-        return True
+        return 1, "ROJO"
     if gcs is not None and gcs <= 8:
-        return True
+        return 1, "ROJO"
+
+    # Reglas NARANJA (nivel 2)
     if spo2 is not None and spo2 < 94:
-        return True
+        return 2, "NARANJA"
     if eva is not None and eva >= 9:
-        return True
-    return False
+        return 2, "NARANJA"
+
+    return 5, "AZUL"
+
+
+def _evaluar_reglas_duras(signos: dict) -> bool:
+    """Retorna True si algún signo vital activa una regla dura clínica."""
+    nivel_num, _ = _nivel_minimo_por_reglas(signos)
+    return nivel_num < 5

@@ -4,11 +4,18 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Ficha
 from .serializers import FichaEstadoSerializer, FichaSerializer
+
+
+class FichaPagination(PageNumberPagination):
+    page_size             = 50
+    page_size_query_param = "page_size"
+    max_page_size         = 200
 
 
 class FichaViewSet(viewsets.ModelViewSet):
@@ -21,12 +28,13 @@ class FichaViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [IsAuthenticated]
-
-    serializer_class = FichaSerializer
+    pagination_class   = FichaPagination
+    serializer_class   = FichaSerializer
     queryset = Ficha.objects.select_related(
         "paciente",
         "profesional_apertura",
         "profesional_apertura__user",
+        "triaje",
     )
 
     def get_queryset(self):
