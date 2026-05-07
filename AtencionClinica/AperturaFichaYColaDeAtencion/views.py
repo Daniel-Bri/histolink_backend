@@ -106,3 +106,6 @@ class FichaViewSet(viewsets.ModelViewSet):
         ficha.full_clean()
         ficha.save()
         return Response(FichaSerializer(ficha).data, status=status.HTTP_200_OK)
+    
+    """Solucionando errores de github
+    """
