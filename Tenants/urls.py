@@ -1,8 +1,18 @@
 from django.urls import path
-from .views import TenantListCreateView, TenantDetailView, MiTenantView
+from .views import (
+    ConfiguracionTenantView,
+    MiTenantView,
+    TenantConfigAdminView,
+    TenantDetailView,
+    TenantListCreateView,
+    TenantToggleActivoView,
+)
 
 urlpatterns = [
-    path('', TenantListCreateView.as_view(), name='tenant-list'),
-    path('mi-tenant/', MiTenantView.as_view(), name='mi-tenant'),
-    path('<int:pk>/', TenantDetailView.as_view(), name='tenant-detail'),
+    path('',                                  TenantListCreateView.as_view(),  name='tenant-list'),
+    path('mi-tenant/',                        MiTenantView.as_view(),          name='mi-tenant'),
+    path('mi-tenant/configuracion/',          ConfiguracionTenantView.as_view(), name='configuracion-tenant'),
+    path('<int:pk>/',                         TenantDetailView.as_view(),      name='tenant-detail'),
+    path('<int:pk>/configuracion/',           TenantConfigAdminView.as_view(), name='tenant-config-admin'),
+    path('<int:pk>/toggle-activo/',           TenantToggleActivoView.as_view(), name='tenant-toggle-activo'),
 ]

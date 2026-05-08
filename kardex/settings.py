@@ -85,6 +85,8 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS",
     # ── Reportes ─────────────────────────────────────────────────────
     "SeguridadAvanzadaYAdministracion.ReporteProduccion",
+    # ── Backup / Restore / Gestiones ─────────────────────────────────
+    "SeguridadAvanzadaYAdministracion.BackupRestore",
 ]
 
 MIDDLEWARE = [

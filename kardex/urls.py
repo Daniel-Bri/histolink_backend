@@ -53,6 +53,9 @@ urlpatterns = [
 
     # SeguridadAvanzadaYAdministracion — CU20: Panel de Auditoría y Reportes SNIS (T036)
     path("api/auditoria/", include("SeguridadAvanzadaYAdministracion.PanelDeAuditoriaYReportesSNIS.urls")),
+
+    # SeguridadAvanzadaYAdministracion — Backup / Restore / Gestiones Anuales
+    path("api/admin/backup/", include("SeguridadAvanzadaYAdministracion.BackupRestore.urls")),
 ]
 
 if settings.DEBUG:
