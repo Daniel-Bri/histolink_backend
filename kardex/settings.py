@@ -87,6 +87,8 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.ReporteProduccion",
     # ── Backup / Restore / Gestiones ─────────────────────────────────
     "SeguridadAvanzadaYAdministracion.BackupRestore",
+    # ── Auditoría ─────────────────────────────────────────────────────
+    "SeguridadAvanzadaYAdministracion.Auditoria",
 ]
 
 MIDDLEWARE = [
@@ -100,8 +102,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Multitenant — debe ir después de AuthenticationMiddleware
     "Tenants.middleware.TenantMiddleware",
-    # T008 — Auditoría de operaciones de escritura
-    "kardex.middleware.AuditoriaMiddleware",
+    "SeguridadAvanzadaYAdministracion.Auditoria.middleware.AuditMiddleware",
 ]
 
 ROOT_URLCONF = "kardex.urls"

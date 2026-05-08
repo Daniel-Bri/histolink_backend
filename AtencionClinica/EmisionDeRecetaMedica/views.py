@@ -11,6 +11,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsFarmacia, EsMedico
+from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
 from .models import Receta
 from .serializers import RecetaSerializer
 
@@ -76,6 +77,8 @@ class RecetaViewSet(viewsets.ModelViewSet):
         receta.fecha_dispensacion = timezone.now()
         receta.save(update_fields=['estado', 'dispensada_por', 'fecha_dispensacion'])
 
+        registrar_evento('DISPENSAR', receta, request=request)
+
         return Response(
             RecetaSerializer(receta, context={'request': request}).data,
             status=status.HTTP_200_OK,
@@ -118,6 +121,8 @@ class RecetaViewSet(viewsets.ModelViewSet):
 
         receta.estado = 'ANULADA'
         receta.save(update_fields=['estado'])
+
+        registrar_evento('ANULAR', receta, request=request)
 
         return Response(
             RecetaSerializer(receta, context={'request': request}).data,
