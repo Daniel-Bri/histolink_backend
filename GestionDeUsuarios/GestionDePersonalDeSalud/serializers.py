@@ -1,11 +1,18 @@
 import re
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import Especialidad, PersonalSalud
+
+# Mapeo rol interno → nombre del Django Group creado por create_groups
+_ROL_A_GRUPO = {
+    'medico':    'Médico',
+    'enfermera': 'Enfermera',
+    'admin':     'Administrativo',
+}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -93,6 +100,8 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         tenant = validated_data.pop('tenant', None)
+        rol = validated_data["rol"]
+
         user = User.objects.create_user(
             username=validated_data["username"],
             first_name=validated_data["first_name"].strip(),
@@ -100,12 +109,21 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
             email=validated_data.get("email", ""),
             password=validated_data["password"],
         )
+
+        # Asignar el grupo Django correspondiente al rol (necesario para JWT y permisos)
+        group_name = _ROL_A_GRUPO.get(rol)
+        if group_name:
+            try:
+                user.groups.add(Group.objects.get(name=group_name))
+            except Group.DoesNotExist:
+                pass  # create_groups no fue ejecutado; continuar igual
+
         telefono = validated_data.get("telefono", "").strip() or None
         personal = PersonalSalud.objects.create(
             user=user,
             tenant=tenant,
             item_min_salud=validated_data["item_min_salud"],
-            rol=validated_data["rol"],
+            rol=rol,
             especialidad=validated_data.get("especialidad"),
             telefono=telefono,
         )
@@ -157,6 +175,32 @@ class PersonalSaludUpdateSerializer(serializers.ModelSerializer):
                 {"especialidad": "La especialidad es obligatoria para rol 'medico'."}
             )
         return attrs
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        new_rol = validated_data.get('rol', instance.rol)
+        old_rol = instance.rol
+        instance = super().update(instance, validated_data)
+
+        # Si cambió el rol, reasignar el grupo Django
+        if new_rol != old_rol:
+            user = instance.user
+            # Quitar los grupos de rol clínico anteriores
+            old_group_name = _ROL_A_GRUPO.get(old_rol)
+            if old_group_name:
+                try:
+                    user.groups.remove(Group.objects.get(name=old_group_name))
+                except Group.DoesNotExist:
+                    pass
+            # Asignar el nuevo grupo
+            new_group_name = _ROL_A_GRUPO.get(new_rol)
+            if new_group_name:
+                try:
+                    user.groups.add(Group.objects.get(name=new_group_name))
+                except Group.DoesNotExist:
+                    pass
+
+        return instance
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

@@ -12,6 +12,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.core.cache import caches
+from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.conf import settings
+
+try:
+    from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_acceso as _registrar_acceso
+    _AUDIT_DISPONIBLE = True
+except Exception:
+    _AUDIT_DISPONIBLE = False
 
 from .serializers import (
     RegisterSerializer,
@@ -19,7 +28,10 @@ from .serializers import (
     LogoutSerializer,
     ChangePasswordSerializer,
     UserSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer,
 )
+from .models import PasswordResetToken
 
 # Ventana de bloqueo por IP tras superar intentos fallidos de login (debe coincidir con el TTL de la caché).
 LOGIN_RATE_LIMIT_WINDOW_SEC = 60
@@ -127,6 +139,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             cache.delete(cache_key)
+            if _AUDIT_DISPONIBLE:
+                try:
+                    user = User.objects.get(username=request.data.get('username', ''))
+                    _registrar_acceso('LOGIN', user, request)
+                except Exception:
+                    pass
 
         return response
 
@@ -153,6 +171,11 @@ class LogoutView(APIView):
         serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        if _AUDIT_DISPONIBLE:
+            try:
+                _registrar_acceso('LOGOUT', request.user, request)
+            except Exception:
+                pass
         return Response(
             {"message": "Sesión cerrada exitosamente."},
             status=status.HTTP_200_OK,
@@ -177,6 +200,113 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ── Recuperación de Contraseña (Forgot / Reset) ─────────────────────────
+
+_FORGOT_RESPONSE = {'detail': 'Si el correo está registrado, recibirás un código de 6 dígitos en tu email.'}
+
+
+class ForgotPasswordView(APIView):
+    """
+    POST /api/auth/forgot-password/
+
+    Genera un código de 6 dígitos y lo envía al email del usuario.
+    La respuesta es siempre la misma (no revela si el email existe).
+
+    Body:
+        email (string)
+
+    Response 200:
+        { detail: "Si el correo..." }
+    """
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email'].strip().lower()
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return Response(_FORGOT_RESPONSE, status=status.HTTP_200_OK)
+
+        token = PasswordResetToken.create_for_user(user)
+
+        try:
+            send_mail(
+                subject='Código de recuperación — Histolink',
+                message=(
+                    f'Hola {user.first_name or user.username},\n\n'
+                    f'Tu código de recuperación de contraseña es:\n\n'
+                    f'        {token.code}\n\n'
+                    f'Este código es válido por 15 minutos.\n'
+                    f'Si no solicitaste este código, ignora este correo.\n\n'
+                    f'— Equipo Histolink'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            return Response(
+                {'error': 'No se pudo enviar el correo. Verifica la configuración SMTP.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(_FORGOT_RESPONSE, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(APIView):
+    """
+    POST /api/auth/reset-password/
+
+    Valida el código enviado por email y cambia la contraseña.
+
+    Body:
+        email, code (6 dígitos), new_password, new_password_confirm
+
+    Response 200:
+        { detail: "Contraseña actualizada exitosamente." }
+
+    Response 400:
+        { error: "Código inválido o expirado." }
+    """
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email'].strip().lower()
+        code = serializer.validated_data['code']
+        new_password = serializer.validated_data['new_password']
+
+        _ERROR = {'error': 'Código inválido o expirado.'}
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return Response(_ERROR, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = PasswordResetToken.objects.get(user=user, code=code, used=False)
+        except PasswordResetToken.DoesNotExist:
+            return Response(_ERROR, status=status.HTTP_400_BAD_REQUEST)
+
+        if not token.is_valid():
+            return Response(_ERROR, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        token.used = True
+        token.save()
+
+        return Response(
+            {'detail': 'Contraseña actualizada exitosamente.'},
+            status=status.HTTP_200_OK,
+        )
 
 
 # ── Cambio de Contraseña ────────────────────────────────────────────────

@@ -2,6 +2,40 @@ from .models import RegistroAuditoria
 from .thread_local import get_current_request
 
 
+def registrar_acceso(accion, user, request=None):
+    """
+    Registra eventos de acceso (LOGIN / LOGOUT) directamente desde el usuario.
+    No requiere un objeto de modelo clínico.
+    """
+    if request is None:
+        request = get_current_request()
+
+    groups = user.groups.all()
+    usuario_rol = groups[0].name if groups.exists() else 'Sin Rol'
+
+    tenant_id = None
+    tenant_nombre = ''
+    if request and hasattr(request, 'tenant') and request.tenant:
+        tenant_id = request.tenant.id
+        tenant_nombre = request.tenant.nombre
+
+    return RegistroAuditoria.objects.create(
+        accion=accion,
+        modelo='User',
+        objeto_id=str(user.id),
+        objeto_repr=user.username,
+        usuario_id=user.id,
+        usuario_nombre=user.username,
+        usuario_rol=usuario_rol,
+        tenant_id=tenant_id,
+        tenant_nombre=tenant_nombre,
+        cambios={},
+        ip_origen=request.META.get('REMOTE_ADDR') if request else None,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500] if request else '',
+        endpoint=request.path if request else '',
+    )
+
+
 def registrar_evento(accion, objeto, cambios=None, request=None):
     """
     Función utilitaria para registrar un evento de auditoría.

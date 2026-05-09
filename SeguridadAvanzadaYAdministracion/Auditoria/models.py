@@ -9,13 +9,15 @@ class RegistroAuditoria(models.Model):
     Almacena información detallada sobre acciones realizadas por los usuarios.
     """
     ACCION_CHOICES = [
-        ('CREATE', 'Creación'),
-        ('UPDATE', 'Modificación'),
-        ('DELETE', 'Eliminación'),
-        ('FIRMAR', 'Firma digital'),
+        ('CREATE',    'Creación'),
+        ('UPDATE',    'Modificación'),
+        ('DELETE',    'Eliminación'),
+        ('FIRMAR',    'Firma digital'),
         ('COMPLETAR', 'Completar'),
         ('DISPENSAR', 'Dispensar'),
-        ('ANULAR', 'Anular'),
+        ('ANULAR',    'Anular'),
+        ('LOGIN',     'Inicio de sesión'),
+        ('LOGOUT',    'Cierre de sesión'),
     ]
 
     accion = models.CharField(max_length=20, choices=ACCION_CHOICES, db_index=True)

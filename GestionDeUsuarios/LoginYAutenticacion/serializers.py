@@ -209,6 +209,34 @@ class LogoutSerializer(serializers.Serializer):
 
 # ── Cambio de Contraseña ────────────────────────────────────────────────
 
+# ── Recuperación de Contraseña ───────────────────────────────────────────
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    """Recibe el email y dispara el envío del código de 6 dígitos."""
+    email = serializers.EmailField()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    """Recibe email + código + nueva contraseña y ejecuta el reset."""
+    email = serializers.EmailField()
+    code = serializers.CharField(min_length=6, max_length=6)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password_confirm = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError(
+                {'new_password_confirm': 'Las contraseñas no coinciden.'}
+            )
+        return attrs
+
+
+# ── Cambio de Contraseña ────────────────────────────────────────────────
+
 class ChangePasswordSerializer(serializers.Serializer):
     """Cambiar contraseña del usuario autenticado."""
     old_password = serializers.CharField(
