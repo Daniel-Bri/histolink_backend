@@ -5,10 +5,10 @@ from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Ficha
+from .permissions import FichaPermission
 from .serializers import FichaEstadoSerializer, FichaSerializer
 
 
@@ -27,7 +27,7 @@ class FichaViewSet(viewsets.ModelViewSet):
     Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [FichaPermission]
     pagination_class   = FichaPagination
     serializer_class   = FichaSerializer
     queryset = Ficha.objects.select_related(
