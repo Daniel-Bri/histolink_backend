@@ -3,7 +3,8 @@ GestionDeUsuarios/LoginYAutenticacion/management/commands/seed_data.py
 
 Carga datos de prueba multitenant para Histolink.
 Crea 3 establecimientos de salud independientes, cada uno con su propio
-personal y pacientes con expediente clínico completo.
+personal completo (Director, Medico, Enfermera, Administrativo, Laboratorio,
+Farmacia, Auditor) y 6 pacientes con expediente clinico completo.
 
 Uso:
     python manage.py seed_data
@@ -25,13 +26,13 @@ from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
 from Tenants.models import Tenant
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # DATOS DE LOS 3 ESTABLECIMIENTOS
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 CLINICAS = [
 
-    # ── Clínica 1: Hospital Universitario San Pablo ──────────────────────
+    # -- Clinica 1: Hospital Universitario San Pablo -------------------------
     {
         "tenant": {
             "nombre": "Hospital Universitario San Pablo",
@@ -41,11 +42,11 @@ CLINICAS = [
             "telefono":  "2-2901234",
         },
         "especialidades": [
-            "Cardiología",
+            "Cardiologia",
             "Medicina Interna",
             "Urgencias y Emergencias",
-            "Neurología",
-            "Cirugía General",
+            "Neurologia",
+            "Cirugia General",
         ],
         "personal": [
             {
@@ -62,7 +63,7 @@ CLINICAS = [
                 "email": "medico@sanpablo.test",
                 "rol_grupo": "Médico",
                 "item_min_salud": "MED-001", "rol": PersonalSalud.ROL_MEDICO,
-                "especialidad": "Cardiología",
+                "especialidad": "Cardiologia",
             },
             {
                 "username": "enf_sanpablo", "password": "12345678",
@@ -80,6 +81,30 @@ CLINICAS = [
                 "item_min_salud": "ADM-001", "rol": PersonalSalud.ROL_ADMIN,
                 "especialidad": None,
             },
+            {
+                "username": "lab_sanpablo", "password": "12345678",
+                "first_name": "Natalia", "last_name": "Cespedes Huanca",
+                "email": "laboratorio@sanpablo.test",
+                "rol_grupo": "Laboratorio",
+                "item_min_salud": "LAB-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "farm_sanpablo", "password": "12345678",
+                "first_name": "Rodrigo", "last_name": "Aliaga Poma",
+                "email": "farmacia@sanpablo.test",
+                "rol_grupo": "Farmacia",
+                "item_min_salud": "FAR-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "aud_sanpablo", "password": "12345678",
+                "first_name": "Lorena", "last_name": "Vargas Ibañez",
+                "email": "auditor@sanpablo.test",
+                "rol_grupo": "Auditor",
+                "item_min_salud": "AUD-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
         ],
         "pacientes": [
             {
@@ -91,11 +116,11 @@ CLINICAS = [
                 "tipo_seguro": "CNS", "numero_asegurado": "CNS-SP-001",
                 "antecedentes": {
                     "grupo_sanguineo": "B+",
-                    "alergias": "Ibuprofeno (úlcera péptica previa)",
-                    "ant_patologicos": "Dislipidemia mixta desde 2018\nEx-tabaquismo (dejó en 2020)",
-                    "ant_no_patologicos": "Ex tabaquista: 20 cig/dia por 25 años. No alcohol.",
+                    "alergias": "Ibuprofeno (ulcera peptica previa)",
+                    "ant_patologicos": "Dislipidemia mixta desde 2018\nEx-tabaquismo (dejo en 2020)",
+                    "ant_no_patologicos": "Ex tabaquista: 20 cig/dia por 25 anos. No alcohol.",
                     "ant_quirurgicos": "Herniorrafia inguinal derecha (2008)",
-                    "ant_familiares": "Padre: IAM, fallecido a los 58 años. Hermano: bypass coronario.",
+                    "ant_familiares": "Padre: IAM, fallecido a los 58 anos. Hermano: bypass coronario.",
                     "ant_gineco_obstetricos": "",
                     "medicacion_actual": "AAS 100mg/dia\nAtorvastina 40mg noche\nOmeprazol 20mg en ayunas",
                     "esquema_vacunacion": "Hepatitis B completo. Influenza anual. Neumococo (2023).",
@@ -115,7 +140,7 @@ CLINICAS = [
                     {
                         "estado": "FIRMADA",
                         "motivo_consulta": "Dolor toracico opresivo irradiado a brazo izquierdo con sudoracion fria de 1 hora de evolucion.",
-                        "historia_enfermedad_actual": "Paciente masculino de 65 años con dislipidemia y antecedente familiar de IAM precoz. Dolor precordial opresivo 8/10 de inicio brusco, irradiado a brazo izquierdo y mandibula, acompañado de diaforesis y nauseas. Toma AAS 100mg como medicacion habitual.",
+                        "historia_enfermedad_actual": "Paciente masculino de 65 anos con dislipidemia y antecedente familiar de IAM precoz. Dolor precordial opresivo 8/10 de inicio brusco, irradiado a brazo izquierdo y mandibula, acompanado de diaforesis y nauseas. Toma AAS 100mg como medicacion habitual.",
                         "examen_fisico": "FC: 104 lpm. PA: 162/100 mmHg. FR: 22 rpm. SpO2: 95%. Paciente sudoroso, ansioso. Tonos cardiacos ritmicos sin soplos. ECG: elevacion del ST en V2-V5.",
                         "impresion_diagnostica": "Sindrome coronario agudo con elevacion del ST (SCACEST). IAM anterior.",
                         "codigo_cie10_principal": "I21.0",
@@ -142,7 +167,7 @@ CLINICAS = [
                     "ant_no_patologicos": "No fuma. No alcohol. Dieta hiposodica.",
                     "ant_quirurgicos": "Reemplazo valvular mitral (2021)",
                     "ant_familiares": "Madre con valvulopatia mitral. Hermana con HTA.",
-                    "ant_gineco_obstetricos": "G3P3A0C0. Menopausia a los 52 años.",
+                    "ant_gineco_obstetricos": "G3P3A0C0. Menopausia a los 52 anos.",
                     "medicacion_actual": "Enalapril 10mg c/12h\nFurosemida 40mg en ayunas\nWarfarina 5mg segun INR\nBisoprolol 5mg c/dia\nEspironolactona 25mg c/dia",
                     "esquema_vacunacion": "Influenza anual. Neumococo (2022). COVID-19 completo.",
                 },
@@ -161,7 +186,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Descompensacion de insuficiencia cardiaca cronica. Disnea y edema progresivos.",
-                        "historia_enfermedad_actual": "Paciente de 68 años con ICC cronica, HTA y FA acude por disnea de esfuerzo que progreso a reposo en 3 dias, con ortopnea (necesita 3 almohadas), edema bimaleolar que asciende hasta rodillas y ganancia de 4kg en 7 dias. Refiere no haber tomado furosemida los ultimos 2 dias por olvido.",
+                        "historia_enfermedad_actual": "Paciente de 68 anos con ICC cronica, HTA y FA acude por disnea de esfuerzo que progreso a reposo en 3 dias, con ortopnea (necesita 3 almohadas), edema bimaleolar que asciende hasta rodillas y ganancia de 4kg en 7 dias. Refiere no haber tomado furosemida los ultimos 2 dias por olvido.",
                         "examen_fisico": "FC: 96 lpm irregular (FA). PA: 148/88 mmHg. FR: 24 rpm. SpO2: 92%. Ingurgitacion yugular ++. Crepitantes bibasales. Edema con godete hasta rodilla bilateral.",
                         "impresion_diagnostica": "Insuficiencia cardiaca descompensada aguda por abandono de diuretico",
                         "codigo_cie10_principal": "I50.9",
@@ -181,7 +206,7 @@ CLINICAS = [
                 "tipo_seguro": "SUS", "numero_asegurado": "",
                 "antecedentes": {
                     "grupo_sanguineo": "O+",
-                    "alergias": "Penicilina (eruption cutanea)",
+                    "alergias": "Penicilina (erupcion cutanea)",
                     "ant_patologicos": "Hipertension arterial estadio 2 (diagnosticada 2020)\nDiabetes tipo 2 (2022)",
                     "ant_no_patologicos": "Tabaquismo activo: 15 cig/dia. Alcohol fin de semana.",
                     "ant_quirurgicos": "Ninguno",
@@ -205,7 +230,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "HTA no controlada con cefalea occipital. Diabetes tipo 2 en control mensual.",
-                        "historia_enfermedad_actual": "Paciente de 51 años con HTA estadio 2 y DM2 acude por control mensual y cefalea occipital 3/10 desde ayer. Reconoce tabaquismo activo y dieta hipercalorica. PA en casa entre 160-170/100. Glucemias matutinas 180-220 mg/dL.",
+                        "historia_enfermedad_actual": "Paciente de 51 anos con HTA estadio 2 y DM2 acude por control mensual y cefalea occipital 3/10 desde ayer. Reconoce tabaquismo activo y dieta hipercalorica. PA en casa entre 160-170/100. Glucemias matutinas 180-220 mg/dL.",
                         "examen_fisico": "PA: 178/108 mmHg. FC: 82 lpm. Peso: 95kg. IMC: 32.9. Glucemia capilar: 198 mg/dL. Sin deficit neurologico focal.",
                         "impresion_diagnostica": "HTA estadio 2 no controlada. Diabetes tipo 2 con mal control glucemico. Obesidad grado 1.",
                         "codigo_cie10_principal": "I10",
@@ -216,10 +241,144 @@ CLINICAS = [
                     },
                 ],
             },
+            {
+                "ci": "3001004", "ci_complemento": "",
+                "nombres": "Andres", "apellido_paterno": "Salinas", "apellido_materno": "Paredes",
+                "fecha_nacimiento": date(2016, 8, 5), "sexo": "M",
+                "autoidentificacion": "MESTIZO", "telefono": "71234010",
+                "direccion": "Av. Saavedra 345, La Paz",
+                "tipo_seguro": "SUS", "numero_asegurado": "",
+                "antecedentes": {
+                    "grupo_sanguineo": "A+",
+                    "alergias": "Sin alergias conocidas",
+                    "ant_patologicos": "Sin antecedentes patologicos previos",
+                    "ant_no_patologicos": "Escolares. Juega futbol.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Sin antecedentes relevantes",
+                    "ant_gineco_obstetricos": "",
+                    "medicacion_actual": "Ninguna",
+                    "esquema_vacunacion": "Esquema PAI completo para la edad.",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "28.0", "talla_cm": "122.0",
+                        "frecuencia_cardiaca": 118, "frecuencia_respiratoria": 26,
+                        "presion_sistolica": 98, "presion_diastolica": 60,
+                        "temperatura_celsius": "39.2", "saturacion_oxigeno": 96,
+                        "escala_dolor": 4, "nivel_urgencia": "AMARILLO",
+                        "motivo_consulta_triaje": "Fiebre alta de 39.2 grados, tos productiva y dificultad para respirar desde hace 2 dias.",
+                        "observaciones": "Nino febril con polipnea. Posible cuadro respiratorio bajo.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Fiebre alta, tos productiva y taquipnea de 2 dias de evolucion en paciente pediatrico.",
+                        "historia_enfermedad_actual": "Nino de 9 anos sin antecedentes patologicos acude por fiebre 39.2C de 2 dias de evolucion acompanada de tos productiva con expectoracion amarillenta, polipnea y malestar general. Inicio con rinorrea y estornudos hace 4 dias. Niega vomitos ni diarrea.",
+                        "examen_fisico": "T: 39.2C. FC: 118 lpm. FR: 26 rpm. SpO2: 96%. Faringe moderadamente eritematosa. Auscultacion: crepitantes en base pulmonar derecha. Sin tiraje.",
+                        "impresion_diagnostica": "Neumonia adquirida en la comunidad (NAC) de gravedad leve. Posible etiologia bacteriana.",
+                        "codigo_cie10_principal": "J18.9",
+                        "descripcion_cie10": "Neumonia no especificada",
+                        "plan_tratamiento": "1. Amoxicilina-Clavulanato 40mg/kg/dia VO c/8h por 7 dias\n2. Ibuprofeno 10mg/kg c/6h SOS fiebre\n3. Nebulizacion con suero fisiologico c/8h\n4. Hidratacion oral abundante\n5. Rx torax de control en 48h si no mejora",
+                        "indicaciones_alta": "Completar antibiotico 7 dias. Reposo escolar. Acudir de urgencia si aumenta dificultad respiratoria, cianosis o fiebre que no cede.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
+            {
+                "ci": "3001005", "ci_complemento": "",
+                "nombres": "Beatriz", "apellido_paterno": "Huanca", "apellido_materno": "Rios",
+                "fecha_nacimiento": date(1993, 3, 15), "sexo": "F",
+                "autoidentificacion": "AYMARA", "telefono": "71234011",
+                "direccion": "Calle Illampu 678, La Paz",
+                "tipo_seguro": "CNS", "numero_asegurado": "CNS-SP-005",
+                "antecedentes": {
+                    "grupo_sanguineo": "O-",
+                    "alergias": "Sin alergias conocidas",
+                    "ant_patologicos": "Migranas cronicas desde 2015. Ansiedad generalizada.",
+                    "ant_no_patologicos": "No fuma. No alcohol. Trabajo administrativo.",
+                    "ant_quirurgicos": "Apendectomia (2012)",
+                    "ant_familiares": "Madre con migranas. Padre con HTA.",
+                    "ant_gineco_obstetricos": "G1P1A0C0. FUM: hace 3 semanas. MAC: anticonceptivos orales.",
+                    "medicacion_actual": "Sumatriptan 50mg SOS migrana\nFluoxetina 20mg c/dia",
+                    "esquema_vacunacion": "Esquema completo. Influenza (2024).",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "62.0", "talla_cm": "162.0",
+                        "frecuencia_cardiaca": 88, "frecuencia_respiratoria": 18,
+                        "presion_sistolica": 130, "presion_diastolica": 84,
+                        "temperatura_celsius": "36.6", "saturacion_oxigeno": 98,
+                        "escala_dolor": 7, "nivel_urgencia": "AMARILLO",
+                        "motivo_consulta_triaje": "Cefalea pulsatil intensa unilateral con nauseas y fotofobia. No cede con sumatriptan habitual.",
+                        "observaciones": "Crisis de migrana sin aura. Paciente con fotofobia marcada.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Crisis de migrana sin aura refractaria a tratamiento habitual.",
+                        "historia_enfermedad_actual": "Paciente de 33 anos con migranas cronicas acude por crisis de 6h de evolucion, cefalea pulsatil hemicraneal izquierda 7/10, con nauseas, fotofobia y fonofobia. Tomo sumatriptan 50mg hace 2h sin mejoria. Identifica el estres laboral como desencadenante.",
+                        "examen_fisico": "Paciente en decubito, fotofobica. PA: 130/84 mmHg. FC: 88 lpm. Fondo de ojo: normal. Sin rigidez de nuca. Sin deficit neurologico focal.",
+                        "impresion_diagnostica": "Migrana sin aura en crisis. Refractaria a triptanes.",
+                        "codigo_cie10_principal": "G43.009",
+                        "descripcion_cie10": "Migrana sin aura, no intratable",
+                        "plan_tratamiento": "1. Ketorolaco 30mg IV dosis unica\n2. Metoclopramida 10mg IV antiemetico\n3. Dimmer de luz y ambiente tranquilo\n4. Si no mejora en 1h: Dexametasona 8mg IV\n5. Revisar profilaxis: considerar Amitriptilina 25mg noche",
+                        "indicaciones_alta": "Reposo en lugar oscuro y tranquilo. Evitar estres. Profilaxis con neurologo. Acudir si cefalea en estallido o fiebre.",
+                        "requiere_derivacion": True,
+                        "derivacion_destino": "Neurologia — Hospital San Pablo",
+                        "derivacion_motivo": "Migranas refractarias frecuentes. Requiere ajuste de profilaxis por especialista.",
+                    },
+                ],
+            },
+            {
+                "ci": "3001006", "ci_complemento": "",
+                "nombres": "Alfredo", "apellido_paterno": "Mendoza", "apellido_materno": "Aguilar",
+                "fecha_nacimiento": date(1945, 11, 30), "sexo": "M",
+                "autoidentificacion": "MESTIZO", "telefono": "71234012",
+                "direccion": "Av. Arce 1100, La Paz",
+                "tipo_seguro": "COSSMIL", "numero_asegurado": "COS-SP-006",
+                "antecedentes": {
+                    "grupo_sanguineo": "AB-",
+                    "alergias": "Contraste yodado (urticaria)",
+                    "ant_patologicos": "ACV isquemico (2021) con secuela de hemiparesia derecha leve\nFibrilacion auricular cronica\nHipertension arterial desde 2010",
+                    "ant_no_patologicos": "Ex-fumador (dejo 2010). No alcohol.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Hermano con ACV a los 70 anos.",
+                    "ant_gineco_obstetricos": "",
+                    "medicacion_actual": "Warfarina 3mg segun INR\nAmlodipino 10mg c/dia\nAtorvastina 40mg noche\nRivaroxaban 20mg con la cena",
+                    "esquema_vacunacion": "Influenza anual. Neumococo (2022). COVID-19 completo.",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "78.0", "talla_cm": "168.0",
+                        "frecuencia_cardiaca": 72, "frecuencia_respiratoria": 17,
+                        "presion_sistolica": 144, "presion_diastolica": 86,
+                        "temperatura_celsius": "36.4", "saturacion_oxigeno": 97,
+                        "escala_dolor": 1, "nivel_urgencia": "VERDE",
+                        "motivo_consulta_triaje": "Control de anticoagulacion. Trae INR de control: 1.6 (subterapeutico).",
+                        "observaciones": "INR fuera de rango terapeutico. Riesgo trombotico aumentado. Requiere ajuste de warfarina.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Control de anticoagulacion. INR 1.6, subterapeutico. Paciente post-ACV con FA cronica.",
+                        "historia_enfermedad_actual": "Paciente de 81 anos con ACV isquemico previo y FA cronica en anticoagulacion con warfarina. Trae INR 1.6 (objetivo 2.0-3.0). Niega sangrados. Refiere que no cambio dieta ni medicamentos. Cumple tratamiento segun su relato.",
+                        "examen_fisico": "PA: 144/86 mmHg. FC: 72 lpm irregular (FA). Peso: 78kg. Hemiparesia derecha residual leve estable. Sin signos de sangrado activo.",
+                        "impresion_diagnostica": "Anticoagulacion subterapeutica. FA cronica con ACV previo. Control de dosis de warfarina.",
+                        "codigo_cie10_principal": "I48.91",
+                        "descripcion_cie10": "Fibrilacion auricular no especificada, cronica",
+                        "plan_tratamiento": "1. Aumentar Warfarina a 4mg/dia por 5 dias\n2. Control de INR en 7 dias\n3. Mantener Amlodipino y Atorvastina\n4. Educar sobre dieta con vitamina K estable\n5. Coordinar con hematologia si INR persiste fuera de rango",
+                        "indicaciones_alta": "No cambiar dieta bruscamente. No omitir warfarina. INR en 7 dias. Acudir de urgencia si cefalea intensa, debilidad unilateral o sangrado.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
         ],
     },
 
-    # ── Clínica 2: Centro de Salud Norte ────────────────────────────────
+    # -- Clinica 2: Centro de Salud Norte ------------------------------------
     {
         "tenant": {
             "nombre": "Centro de Salud Norte",
@@ -230,8 +389,8 @@ CLINICAS = [
         },
         "especialidades": [
             "Medicina General",
-            "Pediatría",
-            "Ginecología y Obstetricia",
+            "Pediatria",
+            "Ginecologia y Obstetricia",
         ],
         "personal": [
             {
@@ -258,6 +417,38 @@ CLINICAS = [
                 "item_min_salud": "ENF-001", "rol": PersonalSalud.ROL_ENFERMERA,
                 "especialidad": None,
             },
+            {
+                "username": "adm_cnorte", "password": "12345678",
+                "first_name": "Wilfredo", "last_name": "Cabrera Torrez",
+                "email": "admin@cnorte.test",
+                "rol_grupo": "Administrativo",
+                "item_min_salud": "ADM-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "lab_cnorte", "password": "12345678",
+                "first_name": "Daniela", "last_name": "Quispe Soria",
+                "email": "laboratorio@cnorte.test",
+                "rol_grupo": "Laboratorio",
+                "item_min_salud": "LAB-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "farm_cnorte", "password": "12345678",
+                "first_name": "Ivan", "last_name": "Mamani Copa",
+                "email": "farmacia@cnorte.test",
+                "rol_grupo": "Farmacia",
+                "item_min_salud": "FAR-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "aud_cnorte", "password": "12345678",
+                "first_name": "Miriam", "last_name": "Zenteno Paz",
+                "email": "auditor@cnorte.test",
+                "rol_grupo": "Auditor",
+                "item_min_salud": "AUD-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
         ],
         "pacientes": [
             {
@@ -274,7 +465,7 @@ CLINICAS = [
                     "ant_no_patologicos": "No fuma. No alcohol. Sedentaria.",
                     "ant_quirurgicos": "Cesarea (2005)",
                     "ant_familiares": "Madre con diabetes tipo 2. Abuela con misma condicion.",
-                    "ant_gineco_obstetricos": "G2P1A0C1. Menarquia a los 13 años. Ciclos regulares.",
+                    "ant_gineco_obstetricos": "G2P1A0C1. Menarquia a los 13 anos. Ciclos regulares.",
                     "medicacion_actual": "Metformina 850mg c/12h\nGlibenclamida 5mg en desayuno",
                     "esquema_vacunacion": "Esquema completo. Influenza (2024). COVID-19 completo.",
                 },
@@ -293,7 +484,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Control mensual de diabetes tipo 2. Trae HbA1c y perfil lipidico.",
-                        "historia_enfermedad_actual": "Paciente de 48 años con DM2 acude a control mensual. Refiere glucemias en casa entre 130-160 mg/dL en ayunas. Buena adherencia a medicacion. Niega hipoglicemias. Sin cambios en vision ni parestesias.",
+                        "historia_enfermedad_actual": "Paciente de 48 anos con DM2 acude a control mensual. Refiere glucemias en casa entre 130-160 mg/dL en ayunas. Buena adherencia a medicacion. Niega hipoglicemias. Sin cambios en vision ni parestesias.",
                         "examen_fisico": "PA: 128/82 mmHg. FC: 78 lpm. Peso: 82kg. IMC: 32.8. Glucemia capilar: 142 mg/dL. Examen de pies: sin lesiones, pulsos presentes.",
                         "impresion_diagnostica": "Diabetes mellitus tipo 2 con control glicemico parcial. Sobrepeso.",
                         "codigo_cie10_principal": "E11.9",
@@ -339,7 +530,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Cuadro febril con odinofagia y congestion nasal de 2 dias de evolucion.",
-                        "historia_enfermedad_actual": "Paciente de 36 años previamente sano consulta por fiebre 38.4C de inicio hace 48h, acompañada de odinofagia intensa, congestion nasal, tos seca y malestar general. Niega dificultad para respirar, dolor de oido o erupcion cutanea.",
+                        "historia_enfermedad_actual": "Paciente de 36 anos previamente sano consulta por fiebre 38.4C de inicio hace 48h, acompanada de odinofagia intensa, congestion nasal, tos seca y malestar general. Niega dificultad para respirar, dolor de oido o erupcion cutanea.",
                         "examen_fisico": "T: 38.4C. FC: 90 lpm. FR: 20 rpm. SpO2: 97%. Faringe: eritematosa con exudado blanquecino bilateral. Amigdalas hipertroficas. Adenopatias cervicales anteriores dolorosas. Otoscopia normal.",
                         "impresion_diagnostica": "Faringoamigdalitis bacteriana aguda (probable Streptococcus pyogenes)",
                         "codigo_cie10_principal": "J02.0",
@@ -383,7 +574,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Lumbalgia aguda sobre cronica. Limitacion funcional importante por 3 dias.",
-                        "historia_enfermedad_actual": "Paciente de 41 años con lumbalgia mecanica cronica de 4 años de evolucion acude por agudizacion hace 3 dias tras cargar objetos pesados en mudanza. Dolor lumbar 6/10 en reposo, 9/10 al moverse. No irradia a miembros inferiores. Sin parestesias ni alteracion de esfinteres.",
+                        "historia_enfermedad_actual": "Paciente de 41 anos con lumbalgia mecanica cronica de 4 anos de evolucion acude por agudizacion hace 3 dias tras cargar objetos pesados en mudanza. Dolor lumbar 6/10 en reposo, 9/10 al moverse. No irradia a miembros inferiores. Sin parestesias ni alteracion de esfinteres.",
                         "examen_fisico": "Postura antalgica en flexion. Contractura paravertebral L3-S1 bilateral. Lasegue negativo bilateral. Sin deficit sensitivo ni motor. Fuerza conservada en miembros inferiores.",
                         "impresion_diagnostica": "Lumbalgia aguda de tipo mecanico sobre cronica. Sin signos de alarma.",
                         "codigo_cie10_principal": "M54.5",
@@ -396,10 +587,144 @@ CLINICAS = [
                     },
                 ],
             },
+            {
+                "ci": "3002004", "ci_complemento": "",
+                "nombres": "Gabriela", "apellido_paterno": "Montano", "apellido_materno": "Herrera",
+                "fecha_nacimiento": date(1998, 7, 22), "sexo": "F",
+                "autoidentificacion": "MESTIZO", "telefono": "71234013",
+                "direccion": "Av. America 890, Cochabamba",
+                "tipo_seguro": "SUS", "numero_asegurado": "",
+                "antecedentes": {
+                    "grupo_sanguineo": "A+",
+                    "alergias": "Sin alergias conocidas",
+                    "ant_patologicos": "Sin antecedentes patologicos previos",
+                    "ant_no_patologicos": "No fuma. No alcohol.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Sin antecedentes relevantes",
+                    "ant_gineco_obstetricos": "G1P0A0C0. Gesta de 28 semanas. FUM: hace 7 meses. CPN regulares.",
+                    "medicacion_actual": "Acido folico 5mg c/dia\nFerro sulfato 300mg c/dia\nCalcio 500mg c/12h",
+                    "esquema_vacunacion": "Esquema completo. Vacuna antitetanica (gestacion). Influenza (2024).",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "72.0", "talla_cm": "165.0",
+                        "frecuencia_cardiaca": 88, "frecuencia_respiratoria": 18,
+                        "presion_sistolica": 136, "presion_diastolica": 88,
+                        "temperatura_celsius": "36.5", "saturacion_oxigeno": 98,
+                        "escala_dolor": 2, "nivel_urgencia": "AMARILLO",
+                        "motivo_consulta_triaje": "Control prenatal de 28 semanas. Refiere edema en pies y PA ligeramente elevada en su casa (140/90).",
+                        "observaciones": "Embarazada de 28 semanas. PA 136/88 al ingreso. Revisar signos de preeclampsia.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Control prenatal 28 semanas. Hipertension gestacional emergente. Edema de miembros inferiores.",
+                        "historia_enfermedad_actual": "Paciente primigestante de 28 anos, 28 semanas de gestacion, acude por control prenatal rutinario. Refiere PA en casa 140/90 en 2 ocasiones. Edema en tobillos desde hace 1 semana. Niega cefalea intensa, vision borrosa, epigastralgia o escotomas.",
+                        "examen_fisico": "PA: 136/88 mmHg (repetida: 138/90). FC: 88 lpm. Peso: 72kg (+2kg en 2 semanas). Edema grado 1 en miembros inferiores. FCF: 148 lpm regular. Altura uterina: 28cm acorde a EG.",
+                        "impresion_diagnostica": "Hipertension gestacional. Descartar preeclampsia. Feto con FCF normal.",
+                        "codigo_cie10_principal": "O13",
+                        "descripcion_cie10": "Hipertension gestacional sin proteinuria significativa",
+                        "plan_tratamiento": "1. Solicitar orina completa y proteinuria en 24h\n2. Solicitar hemograma, creatinina, acido urico, transaminasas\n3. Reposo relativo en decubito lateral izquierdo\n4. Control de PA cada 6h\n5. Si PA > 150/100: iniciar Metildopa 500mg c/8h",
+                        "indicaciones_alta": "Reposo. Control PA en casa 2 veces al dia. Acudir de urgencia si cefalea intensa, vision borrosa o dolor en epigastrio. Control en 3 dias.",
+                        "requiere_derivacion": True,
+                        "derivacion_destino": "Alto Riesgo Obstetrico — Centro de Salud Norte",
+                        "derivacion_motivo": "Hipertension gestacional en semana 28 con riesgo de preeclampsia.",
+                    },
+                ],
+            },
+            {
+                "ci": "3002005", "ci_complemento": "",
+                "nombres": "Kevin Daniel", "apellido_paterno": "Aguilera", "apellido_materno": "Solis",
+                "fecha_nacimiento": date(2020, 4, 10), "sexo": "M",
+                "autoidentificacion": "MESTIZO", "telefono": "71234014",
+                "direccion": "Calle Lanza 456, Cochabamba",
+                "tipo_seguro": "SUS", "numero_asegurado": "",
+                "antecedentes": {
+                    "grupo_sanguineo": "B+",
+                    "alergias": "Sin alergias conocidas",
+                    "ant_patologicos": "Sin antecedentes patologicos previos",
+                    "ant_no_patologicos": "Lactante mayor. Alimentacion mixta.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Sin antecedentes relevantes",
+                    "ant_gineco_obstetricos": "",
+                    "medicacion_actual": "Ninguna",
+                    "esquema_vacunacion": "Esquema PAI incompleto: pendiente 4ta dosis pentavalente.",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "11.5", "talla_cm": "80.0",
+                        "frecuencia_cardiaca": 140, "frecuencia_respiratoria": 48,
+                        "presion_sistolica": 90, "presion_diastolica": 60,
+                        "temperatura_celsius": "38.1", "saturacion_oxigeno": 93,
+                        "escala_dolor": 3, "nivel_urgencia": "NARANJA",
+                        "motivo_consulta_triaje": "Lactante de 5 anos con dificultad respiratoria, sibilancias y fiebre de 38.1C desde hace 12 horas. Primer episodio.",
+                        "observaciones": "SpO2 93% en lactante. Polipnea 48 rpm. Sibilancias audibles. Probable bronquiolitis.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Bronquiolitis aguda en lactante mayor de 5 anos. Primer episodio sibilante.",
+                        "historia_enfermedad_actual": "Lactante de 5 anos de edad, peso 11.5kg, con cuadro de 12h de rinorrea, fiebre 38.1C y dificultad respiratoria progresiva con sibilancias. Sin antecedente de episodios previos ni historia familiar de asma. Contacto con familiar con IRA en casa hace 5 dias.",
+                        "examen_fisico": "T: 38.1C. FC: 140 lpm. FR: 48 rpm. SpO2: 93%. Tiraje subcostal leve. Sibilancias espiratorias difusas bilaterales. Crepitantes en base izquierda. Sin cianosis.",
+                        "impresion_diagnostica": "Bronquiolitis aguda moderada. Primer episodio sibilante. Posible etiologia por VRS.",
+                        "codigo_cie10_principal": "J21.9",
+                        "descripcion_cie10": "Bronquiolitis aguda no especificada",
+                        "plan_tratamiento": "1. Nebulizacion con suero hipertonico 3% c/4h\n2. Oxigenoterapia si SpO2 < 92%\n3. Posicion semiincorporada\n4. Hidratacion oral frecuente a tolerancia\n5. Monitoreo SpO2 continuo\n6. Alta si SpO2 > 94% sostenida",
+                        "indicaciones_alta": "Posicion semisentada. Evitar humo de cigarrillo. Consulta inmediata si SpO2 < 92%, aleteo nasal o cianosis. Control en 24h.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
+            {
+                "ci": "3002006", "ci_complemento": "",
+                "nombres": "Hugo Rene", "apellido_paterno": "Balderrama", "apellido_materno": "Cuellar",
+                "fecha_nacimiento": date(1967, 1, 18), "sexo": "M",
+                "autoidentificacion": "MESTIZO", "telefono": "71234015",
+                "direccion": "Calle Aroma 234, Cochabamba",
+                "tipo_seguro": "CNS", "numero_asegurado": "CNS-CN-006",
+                "antecedentes": {
+                    "grupo_sanguineo": "O+",
+                    "alergias": "Sulfas (eritema cutaneo)",
+                    "ant_patologicos": "Gota articular desde 2018\nHipertension arterial desde 2019",
+                    "ant_no_patologicos": "Consumo moderado de alcohol (fines de semana). No fuma.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Padre con gota. Hermano con hiperuricemia.",
+                    "ant_gineco_obstetricos": "",
+                    "medicacion_actual": "Alopurinol 300mg c/dia\nLosartan 50mg c/dia\nColchicina 0.5mg SOS crisis",
+                    "esquema_vacunacion": "Influenza (2024). COVID-19 completo.",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "88.0", "talla_cm": "173.0",
+                        "frecuencia_cardiaca": 80, "frecuencia_respiratoria": 17,
+                        "presion_sistolica": 150, "presion_diastolica": 94,
+                        "temperatura_celsius": "36.8", "saturacion_oxigeno": 98,
+                        "escala_dolor": 8, "nivel_urgencia": "AMARILLO",
+                        "motivo_consulta_triaje": "Dolor intenso en articulacion del tobillo derecho desde esta manana. Inflamacion, eritema y calor local. Sospecha de crisis de gota.",
+                        "observaciones": "Artritis aguda de tobillo derecho. Hiperuricemia conocida. Evaluar crisis de gota.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Crisis aguda de gota en tobillo derecho. Dolor 8/10 de inicio brusco esta manana.",
+                        "historia_enfermedad_actual": "Paciente de 59 anos con gota articular conocida acude por dolor agudo 8/10 en tobillo derecho desde las 4am, con inflamacion, eritema y calor local. Refiere haber consumido alcohol y comida rica en purinas el fin de semana. No tomo colchicina oportunamente.",
+                        "examen_fisico": "Tobillo derecho: eritema intenso, edema, calor local marcado. Dolor exquisito a la palpacion y con el movimiento. PA: 150/94 mmHg. Uricemia en espera.",
+                        "impresion_diagnostica": "Crisis aguda de gota en articulacion tibiotarsiana derecha. HTA no controlada.",
+                        "codigo_cie10_principal": "M10.07",
+                        "descripcion_cie10": "Gota idiopatica, tobillo y pie",
+                        "plan_tratamiento": "1. Indometacina 50mg c/8h por 5 dias con comida\n2. Colchicina 0.5mg c/12h por 3 dias\n3. Reposo del tobillo afectado\n4. Hielo local 20 min c/6h\n5. Ajustar Losartan a 100mg y agregar Amlodipino 5mg para HTA",
+                        "indicaciones_alta": "Evitar alcohol y alimentos ricos en purinas (carnes rojas, mariscos, visceras). Aumentar hidratacion. Continuar alopurinol. Control en 7 dias con uricemia.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
         ],
     },
 
-    # ── Clínica 3: Policlinica Santa Rosa ───────────────────────────────
+    # -- Clinica 3: Policlinica Santa Rosa -----------------------------------
     {
         "tenant": {
             "nombre": "Policlinica Santa Rosa",
@@ -410,9 +735,9 @@ CLINICAS = [
         },
         "especialidades": [
             "Medicina General",
-            "Ginecología y Obstetricia",
-            "Dermatología",
-            "Endocrinología",
+            "Ginecologia y Obstetricia",
+            "Dermatologia",
+            "Endocrinologia",
         ],
         "personal": [
             {
@@ -440,11 +765,35 @@ CLINICAS = [
                 "especialidad": None,
             },
             {
+                "username": "adm_srosa", "password": "12345678",
+                "first_name": "Carolina", "last_name": "Pedraza Gutierrez",
+                "email": "admin@srosa.test",
+                "rol_grupo": "Administrativo",
+                "item_min_salud": "ADM-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
                 "username": "lab_srosa", "password": "12345678",
                 "first_name": "Miguel", "last_name": "Barba Justiniano",
                 "email": "laboratorio@srosa.test",
                 "rol_grupo": "Laboratorio",
                 "item_min_salud": "LAB-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "farm_srosa", "password": "12345678",
+                "first_name": "Paola", "last_name": "Suarez Nava",
+                "email": "farmacia@srosa.test",
+                "rol_grupo": "Farmacia",
+                "item_min_salud": "FAR-001", "rol": PersonalSalud.ROL_ADMIN,
+                "especialidad": None,
+            },
+            {
+                "username": "aud_srosa", "password": "12345678",
+                "first_name": "Marcos", "last_name": "Rocha Cabrera",
+                "email": "auditor@srosa.test",
+                "rol_grupo": "Auditor",
+                "item_min_salud": "AUD-001", "rol": PersonalSalud.ROL_ADMIN,
                 "especialidad": None,
             },
         ],
@@ -482,7 +831,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Crisis asmatica moderada que no cede con broncodilatador de rescate habitual.",
-                        "historia_enfermedad_actual": "Paciente de 38 años con asma bronquial alergica acude por disnea de 3h de evolucion desencadenada por limpieza de habitacion polvorienta. Uso de 6 puffs de salbutamol sin mejoria suficiente. Sibilancias audibles por el propio paciente.",
+                        "historia_enfermedad_actual": "Paciente de 38 anos con asma bronquial alergica acude por disnea de 3h de evolucion desencadenada por limpieza de habitacion polvorienta. Uso de 6 puffs de salbutamol sin mejoria suficiente. Sibilancias audibles por el propio paciente.",
                         "examen_fisico": "FR: 24 rpm. SpO2: 93%. Torax: sibilancias espiratorias difusas bilaterales. Leve uso de musculatura accesoria. Sin cianosis.",
                         "impresion_diagnostica": "Crisis asmatica moderada",
                         "codigo_cie10_principal": "J45.1",
@@ -519,14 +868,14 @@ CLINICAS = [
                         "temperatura_celsius": "36.1", "saturacion_oxigeno": 98,
                         "escala_dolor": 2, "nivel_urgencia": "VERDE",
                         "motivo_consulta_triaje": "Control de hipotiroidismo. Refiere cansancio y aumento de peso de 4kg en 2 meses a pesar de no cambiar dieta.",
-                        "observaciones": "FC 60 lpm. Paciente refiere mucho frio y estreñimiento. TSH pendiente de revision.",
+                        "observaciones": "FC 60 lpm. Paciente refiere mucho frio y estrenimiento. TSH pendiente de revision.",
                     },
                 ],
                 "consultas": [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Control de hipotiroidismo. Sintomas de hipofuncion tiroidea a pesar de tratamiento.",
-                        "historia_enfermedad_actual": "Paciente de 44 años con hipotiroidismo en tratamiento con levotiroxina 75mcg acude por control trimestral. Refiere aumento de peso 4kg en 2 meses, cansancio extremo, intolerancia al frio, constipacion y cabello fragil. Cumple con medicacion en ayunas.",
+                        "historia_enfermedad_actual": "Paciente de 44 anos con hipotiroidismo en tratamiento con levotiroxina 75mcg acude por control trimestral. Refiere aumento de peso 4kg en 2 meses, cansancio extremo, intolerancia al frio, constipacion y cabello fragil. Cumple con medicacion en ayunas.",
                         "examen_fisico": "PA: 110/70 mmHg. FC: 60 lpm. Peso: 68kg. Piel seca y palida. Cabello opaco. Reflejos osteotendinosos levemente enlentecidos. Tiroides: no palpable, sin nodulos.",
                         "impresion_diagnostica": "Hipotiroidismo primario insuficientemente controlado (probable dosis insuficiente de levotiroxina)",
                         "codigo_cie10_principal": "E03.9",
@@ -570,7 +919,7 @@ CLINICAS = [
                     {
                         "estado": "COMPLETADA",
                         "motivo_consulta": "Flujo vaginal abundante, con mal olor y prurito intenso de 5 dias de evolucion.",
-                        "historia_enfermedad_actual": "Paciente de 30 años sin antecedentes ginecologicos previos acude por flujo vaginal grisaceo abundante con olor a pescado desde hace 5 dias, acompañado de prurito vulvar moderado. Niega fiebre, dolor abdominal o dispareunia. No tiene pareja estable. Ultima relacion sexual hace 3 semanas.",
+                        "historia_enfermedad_actual": "Paciente de 30 anos sin antecedentes ginecologicos previos acude por flujo vaginal grisaceo abundante con olor a pescado desde hace 5 dias, acompanado de prurito vulvar moderado. Niega fiebre, dolor abdominal o dispareunia. No tiene pareja estable. Ultima relacion sexual hace 3 semanas.",
                         "examen_fisico": "Genitales externos con eritema moderado. Flujo vaginal grisaceo homogeneo con olor caracteristico. pH vaginal: 5.5. Test de aminas positivo. Cuello uterino sin lesiones visibles.",
                         "impresion_diagnostica": "Vaginosis bacteriana",
                         "codigo_cie10_principal": "N76.0",
@@ -581,17 +930,151 @@ CLINICAS = [
                     },
                 ],
             },
+            {
+                "ci": "3003004", "ci_complemento": "",
+                "nombres": "Renata", "apellido_paterno": "Flores", "apellido_materno": "Vidal",
+                "fecha_nacimiento": date(2001, 5, 19), "sexo": "F",
+                "autoidentificacion": "MESTIZO", "telefono": "71234016",
+                "direccion": "Av. Cristo Redentor 890, Santa Cruz",
+                "tipo_seguro": "PARTICULAR", "numero_asegurado": "",
+                "antecedentes": {
+                    "grupo_sanguineo": "A-",
+                    "alergias": "Nickel (dermatitis de contacto)",
+                    "ant_patologicos": "Dermatitis atopica desde la infancia. Rinitis alergica.",
+                    "ant_no_patologicos": "No fuma. No alcohol.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Madre con dermatitis atopica. Padre con psoriasis.",
+                    "ant_gineco_obstetricos": "G0P0A0C0. FUM: hace 2 semanas. Ciclos regulares. MAC: ACO.",
+                    "medicacion_actual": "Loratadina 10mg c/dia\nEmoliente corporal c/12h",
+                    "esquema_vacunacion": "Esquema completo. Influenza (2024).",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "58.0", "talla_cm": "165.0",
+                        "frecuencia_cardiaca": 76, "frecuencia_respiratoria": 16,
+                        "presion_sistolica": 110, "presion_diastolica": 68,
+                        "temperatura_celsius": "36.5", "saturacion_oxigeno": 99,
+                        "escala_dolor": 3, "nivel_urgencia": "VERDE",
+                        "motivo_consulta_triaje": "Brote de eczema en cara y codo derecho desde hace 1 semana. Prurito intenso que no mejora con loratadina.",
+                        "observaciones": "Lesiones eczematosas activas en cara y fosa antecubital derecha. Paciente con rascado.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Brote de dermatitis atopica en cara y codo derecho. Prurito intenso refractario a antihistaminico oral.",
+                        "historia_enfermedad_actual": "Paciente de 25 anos con dermatitis atopica cronica acude por brote de 1 semana de evolucion en region malar bilateral y fosa antecubital derecha. Prurito intenso que altera el sueno. Loratadina sin efecto suficiente. Relaciona brote con cambio de detergente hace 2 semanas.",
+                        "examen_fisico": "Placas eritematosas con descamacion fina en mejillas y fosa antecubital derecha. Liquenificacion leve. Lesiones de rascado. Sin infeccion sobreagregada visible.",
+                        "impresion_diagnostica": "Dermatitis atopica en brote moderado. Sin infeccion bacteriana sobreagregada.",
+                        "codigo_cie10_principal": "L20.9",
+                        "descripcion_cie10": "Dermatitis atopica no especificada",
+                        "plan_tratamiento": "1. Betametasona 0.05% crema c/12h por 7 dias en zonas activas\n2. Tacrolimus 0.1% unguento mantenimiento en cara\n3. Cetirizina 10mg en la noche\n4. Emoliente sin fragancia c/8h en todo el cuerpo\n5. Evitar detergente nuevo y tejidos sinteticos",
+                        "indicaciones_alta": "No usar jabon con fragancia. Ducha tibia corta. Hidratar piel inmediatamente despues del bano. Evitar rascado. Control en 2 semanas.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
+            {
+                "ci": "3003005", "ci_complemento": "",
+                "nombres": "Ernesto", "apellido_paterno": "Antezana", "apellido_materno": "Quiroga",
+                "fecha_nacimiento": date(1970, 9, 7), "sexo": "M",
+                "autoidentificacion": "MESTIZO", "telefono": "71234017",
+                "direccion": "Calle Warnes 345, Santa Cruz",
+                "tipo_seguro": "SUS", "numero_asegurado": "",
+                "antecedentes": {
+                    "grupo_sanguineo": "B+",
+                    "alergias": "Sin alergias conocidas",
+                    "ant_patologicos": "Obesidad grado 2 desde 2015\nHigado graso no alcoholico (HGNA) diagnosticado 2022\nSindrome metabolico",
+                    "ant_no_patologicos": "No fuma. Consumo ocasional de alcohol. Trabajo sedentario.",
+                    "ant_quirurgicos": "Ninguno",
+                    "ant_familiares": "Padre con diabetes tipo 2. Madre con obesidad.",
+                    "ant_gineco_obstetricos": "",
+                    "medicacion_actual": "Metformina 500mg c/12h (inicio reciente)\nOmegasol 1g c/dia",
+                    "esquema_vacunacion": "Influenza (2024). COVID-19 completo.",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "112.0", "talla_cm": "172.0",
+                        "frecuencia_cardiaca": 84, "frecuencia_respiratoria": 18,
+                        "presion_sistolica": 142, "presion_diastolica": 90,
+                        "temperatura_celsius": "36.6", "saturacion_oxigeno": 97,
+                        "escala_dolor": 1, "nivel_urgencia": "VERDE",
+                        "motivo_consulta_triaje": "Control de obesidad y sindrome metabolico. Trae laboratorios con glucemia en ayunas 118 mg/dL y trigliceridos 280 mg/dL.",
+                        "observaciones": "Paciente con obesidad grado 2. Sindrome metabolico con multiples factores. Requiere evaluacion endocrinologica.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Control de sindrome metabolico. Laboratorios con prediabetes y dislipidemia mixta. Obesidad grado 2.",
+                        "historia_enfermedad_actual": "Paciente de 56 anos con obesidad grado 2 y HGNA acude a control mensual de endocrinologia. Trae laboratorios: glucemia 118 mg/dL (prediabetes), TG 280 mg/dL, HDL 36 mg/dL, LDL 145 mg/dL. PA en casa 140-145/90. Niega poliuria, polidipsia o dificultad para bajar de peso con el plan actual.",
+                        "examen_fisico": "Peso: 112kg. Talla: 172cm. IMC: 37.9 (obesidad grado 2). Circunferencia abdominal: 112cm. PA: 142/90 mmHg. Higado palpable 2cm bajo reborde costal. Sin edemas.",
+                        "impresion_diagnostica": "Sindrome metabolico con prediabetes, dislipidemia mixta, HTA estadio 1 y obesidad grado 2. HGNA.",
+                        "codigo_cie10_principal": "E88.81",
+                        "descripcion_cie10": "Sindrome metabolico",
+                        "plan_tratamiento": "1. Intensificar Metformina a 850mg c/12h\n2. Iniciar Atorvastina 20mg en la noche\n3. Iniciar Losartan 50mg c/dia para HTA\n4. Plan nutricional hipocalorico e hiposodico con nutricionista\n5. Actividad fisica aerobica 150 min/semana\n6. Control en 30 dias con laboratorios completos",
+                        "indicaciones_alta": "Dieta hipocalorica estricta. Caminar 30 min al dia. Evitar alcohol. Monitorear PA diariamente. Control en 1 mes.",
+                        "requiere_derivacion": True,
+                        "derivacion_destino": "Nutricion — Policlinica Santa Rosa",
+                        "derivacion_motivo": "Obesidad grado 2 con sindrome metabolico. Plan nutricional estructurado urgente.",
+                    },
+                ],
+            },
+            {
+                "ci": "3003006", "ci_complemento": "",
+                "nombres": "Silvia", "apellido_paterno": "Gutierrez", "apellido_materno": "Pena",
+                "fecha_nacimiento": date(1955, 2, 14), "sexo": "F",
+                "autoidentificacion": "MESTIZO", "telefono": "71234018",
+                "direccion": "Av. Paurito 123, Santa Cruz",
+                "tipo_seguro": "CNS", "numero_asegurado": "CNS-SR-006",
+                "antecedentes": {
+                    "grupo_sanguineo": "A+",
+                    "alergias": "Metamizol (anafilaxia leve)",
+                    "ant_patologicos": "Osteoporosis diagnosticada 2020\nHipertension arterial desde 2016\nArtritis reumatoide desde 2018",
+                    "ant_no_patologicos": "No fuma. No alcohol. Jubilada.",
+                    "ant_quirurgicos": "Protesis de cadera derecha (2023)",
+                    "ant_familiares": "Madre con osteoporosis. Hermana con artritis reumatoide.",
+                    "ant_gineco_obstetricos": "G3P3A0C0. Menopausia a los 48 anos.",
+                    "medicacion_actual": "Metrotexato 7.5mg semanal\nAcido folico 5mg (dia siguiente al MTX)\nCalcio 1000mg c/dia\nVitamina D 800UI c/dia\nAmlodipino 10mg c/dia",
+                    "esquema_vacunacion": "Influenza anual. Neumococo (2023). COVID-19 completo. Zoster (2022).",
+                },
+                "triajes": [
+                    {
+                        "peso_kg": "60.0", "talla_cm": "155.0",
+                        "frecuencia_cardiaca": 76, "frecuencia_respiratoria": 16,
+                        "presion_sistolica": 138, "presion_diastolica": 84,
+                        "temperatura_celsius": "36.4", "saturacion_oxigeno": 98,
+                        "escala_dolor": 5, "nivel_urgencia": "VERDE",
+                        "motivo_consulta_triaje": "Control de artritis reumatoide. Refiere rigidez matutina de 2 horas y dolor en munecas bilaterales desde hace 2 semanas.",
+                        "observaciones": "Paciente con AR conocida. Posible brote articular. Revisar adherencia a MTX.",
+                    },
+                ],
+                "consultas": [
+                    {
+                        "estado": "COMPLETADA",
+                        "motivo_consulta": "Control de artritis reumatoide. Posible brote con rigidez matutina prolongada y artritis de munecas.",
+                        "historia_enfermedad_actual": "Paciente de 71 anos con AR en tratamiento con metotrexato acude por rigidez matutina de 2h de duracion y dolor en munecas bilaterales con leve inflamacion desde hace 2 semanas. Refiere haber omitido 2 dosis de MTX por nauseas. Sin fiebre ni otros sintomas sistemicos.",
+                        "examen_fisico": "Munecas: inflamacion leve bilateral, dolor a la palpacion y limitacion de flexo-extension. Sin tenosinovitis visible. Articulaciones MCP y IFP sin cambios activos. PA: 138/84 mmHg. Sin fiebre.",
+                        "impresion_diagnostica": "Brote leve de artritis reumatoide en munecas por probable omision de metotrexato.",
+                        "codigo_cie10_principal": "M05.9",
+                        "descripcion_cie10": "Artritis reumatoide seropositiva, no especificada",
+                        "plan_tratamiento": "1. Retomar Metotrexato 7.5mg semanal con antiemedico previo\n2. Prednisona 10mg/dia por 7 dias (puente)\n3. Continuar Calcio y Vitamina D\n4. Control en 4 semanas con laboratorios (hemograma, hepatico)\n5. Si persiste actividad: considerar escalar a MTX 10mg",
+                        "indicaciones_alta": "No omitir MTX. Tomar con comida para reducir nauseas. Si hay fiebre o sintomas sistemicos, consultar de inmediato. Control en 1 mes.",
+                        "requiere_derivacion": False,
+                    },
+                ],
+            },
         ],
     },
 ]
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # COMMAND
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class Command(BaseCommand):
-    help = "Carga datos de prueba multitenant: 3 clinicas con personal y pacientes completos."
+    help = "Carga datos de prueba multitenant: 3 clinicas con personal completo y 6 pacientes cada una."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -617,11 +1100,11 @@ class Command(BaseCommand):
             self._crear_pacientes(tenant, clinica["pacientes"], medico, enfermera)
 
         self.stdout.write("\n=== Seed completado ===\n")
-        self.stdout.write("Credenciales de acceso (password: Test1234!):\n")
+        self.stdout.write("Credenciales de acceso (password: 12345678):\n")
         for clinica in CLINICAS:
             self.stdout.write(f"\n  [{clinica['tenant']['nombre']}]")
             for p in clinica["personal"]:
-                self.stdout.write(f"    {p['username']:20} ({p['rol_grupo']})")
+                self.stdout.write(f"    {p['username']:22} ({p['rol_grupo']})")
 
     # ------------------------------------------------------------------
     def _limpiar(self):
@@ -695,7 +1178,7 @@ class Command(BaseCommand):
                 },
             )
             estado = "[OK]" if ucreado else "[--]"
-            self.stdout.write(f"  {estado} {datos['rol_grupo']}: {user.get_full_name()} ({datos['username']})")
+            self.stdout.write(f"  {estado} {datos['rol_grupo']:15} {user.get_full_name()} ({datos['username']})")
             resultado[datos["username"]] = user
 
         return resultado
@@ -737,7 +1220,7 @@ class Command(BaseCommand):
             if not created:
                 continue
 
-            # PersonalSalud del médico para apertura de fichas
+            # PersonalSalud del medico para apertura de fichas
             try:
                 ps_apertura = medico.perfil_personal_salud
             except Exception:

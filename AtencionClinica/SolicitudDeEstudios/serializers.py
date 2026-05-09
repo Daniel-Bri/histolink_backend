@@ -31,25 +31,50 @@ def personal_desde_usuario(user) -> PersonalSalud:
 
 
 class OrdenEstudioListSerializer(serializers.ModelSerializer):
-    """Listados compactos."""
+    """Listados compactos con campos suficientes para el panel de detalle."""
 
     paciente_nombre = serializers.SerializerMethodField()
+    medico_solicitante_nombre = serializers.SerializerMethodField()
     tipo_label = serializers.CharField(source="get_tipo_display", read_only=True)
     estado_label = serializers.CharField(source="get_estado_display", read_only=True)
+    resultado = serializers.SerializerMethodField()
 
     class Meta:
         model = OrdenEstudio
         fields = (
             "id",
             "correlativo_orden",
+            "consulta_id",
             "tipo",
             "tipo_label",
+            "descripcion",
+            "indicacion_clinica",
             "urgente",
+            "motivo_urgencia",
             "estado",
             "estado_label",
             "fecha_solicitud",
             "paciente_nombre",
+            "medico_solicitante_nombre",
+            "resultado",
         )
+
+    def get_medico_solicitante_nombre(self, obj: OrdenEstudio) -> str:
+        return _nombre_personal(obj.medico_solicitante)
+
+    def get_resultado(self, obj: OrdenEstudio):
+        try:
+            r = obj.resultado
+            return {
+                "id": r.id,
+                "archivo_adjunto": r.archivo_adjunto.url if r.archivo_adjunto else None,
+                "nombre_archivo": r.nombre_archivo,
+                "valores_resultado": r.valores_resultado,
+                "interpretacion_medica": r.interpretacion_medica,
+                "fecha_resultado": r.fecha_resultado.isoformat() if r.fecha_resultado else None,
+            }
+        except Exception:
+            return None
 
     def get_paciente_nombre(self, obj: OrdenEstudio) -> str:
         try:
