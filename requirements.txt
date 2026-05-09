@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════
 # SISTEMA DE GESTIÓN DOCUMENTAL CLÍNICO — UAGRM Grupo #13 INF412-SA
 # requirements.txt
-# Python 3.11+ / 3.12
+# Python 3.11 / 3.12 / 3.13
 # ═══════════════════════════════════════════════════════════════════════
 
 # ── FRAMEWORK WEB ───────────────────────────────────────────────────────
@@ -39,9 +39,9 @@ cryptography==43.0.3             # RSA, EC, firmas digitales, x.509
 pycryptodome==3.21.0             # AES, SHA, utilidades extra
 
 # ── MACHINE LEARNING — MODELO 1: Regresión Logística ────────────────────
-scikit-learn==1.5.2
-numpy==1.26.4
-pandas==2.2.3
+scikit-learn>=1.5.2
+numpy>=1.26.4
+pandas>=2.2.3
 joblib==1.4.2                    # serialización de modelos ML
 
 # ── MACHINE LEARNING — MODELO 2: NLP + Naive Bayes ──────────────────────
