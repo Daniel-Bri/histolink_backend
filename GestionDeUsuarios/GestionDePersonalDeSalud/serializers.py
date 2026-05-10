@@ -1,6 +1,8 @@
 import re
 
 from django.contrib.auth.models import Group, User
+from django.contrib.auth.password_validation import validate_password as django_validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
@@ -64,7 +66,7 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     email = serializers.EmailField(required=False, allow_blank=True, default="")
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
 
     # Datos del perfil
     item_min_salud = serializers.CharField(max_length=20)
@@ -80,6 +82,25 @@ class PersonalSaludCreateSerializer(serializers.Serializer):
         value = value.strip()
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("El nombre de usuario ya está en uso.")
+        return value
+
+    def validate_password(self, value):
+        errores = []
+        if len(value) < 8:
+            errores.append("Debe tener al menos 8 caracteres.")
+        if not re.search(r"[A-Z]", value):
+            errores.append("Debe contener al menos una letra mayúscula.")
+        if not re.search(r"[a-z]", value):
+            errores.append("Debe contener al menos una letra minúscula.")
+        if not re.search(r"\d", value):
+            errores.append("Debe contener al menos un número.")
+        if errores:
+            raise serializers.ValidationError(errores)
+        # Validadores de Django: CommonPasswordValidator, NumericPasswordValidator, etc.
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
         return value
 
     def validate_item_min_salud(self, value):
