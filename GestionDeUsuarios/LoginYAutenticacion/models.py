@@ -23,7 +23,7 @@ class PasswordResetToken(models.Model):
         return cls.objects.create(
             user=user,
             code=code,
-            expires_at=timezone.now() + timedelta(minutes=15),
+            expires_at=timezone.now() + timedelta(minutes=30),
         )
 
     def is_valid(self):

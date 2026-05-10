@@ -255,9 +255,9 @@ class ForgotPasswordView(APIView):
                 recipient_list=[user.email],
                 fail_silently=False,
             )
-        except Exception as mail_exc:
+        except Exception:
             return Response(
-                {'error': f'{type(mail_exc).__name__}: {mail_exc}'},
+                {'error': 'No se pudo enviar el correo. Verifica la configuración de email en el servidor.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
