@@ -232,7 +232,13 @@ class ForgotPasswordView(APIView):
         except User.DoesNotExist:
             return Response(_FORGOT_RESPONSE, status=status.HTTP_200_OK)
 
-        token = PasswordResetToken.create_for_user(user)
+        try:
+            token = PasswordResetToken.create_for_user(user)
+        except Exception:
+            return Response(
+                {'error': 'Error interno al generar el código. La tabla de tokens puede no existir — ejecuta las migraciones.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         try:
             send_mail(
@@ -251,7 +257,7 @@ class ForgotPasswordView(APIView):
             )
         except Exception:
             return Response(
-                {'error': 'No se pudo enviar el correo. Verifica la configuración SMTP.'},
+                {'error': 'No se pudo enviar el correo. Verifica la configuración SMTP en el servidor.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
