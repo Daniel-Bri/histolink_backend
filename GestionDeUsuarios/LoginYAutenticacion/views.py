@@ -246,8 +246,10 @@ class ForgotPasswordView(APIView):
                 message=(
                     f'Hola {user.first_name or user.username},\n\n'
                     f'Tu código de recuperación de contraseña es:\n\n'
-                    f'        {token.code}\n\n'
+                    f'    {token.code}\n\n'
                     f'Este código es válido por 30 minutos.\n'
+                    f'IMPORTANTE: si solicitaste varios códigos, usa únicamente este,\n'
+                    f'el más reciente — los anteriores ya no son válidos.\n\n'
                     f'Si no solicitaste este código, ignora este correo.\n\n'
                     f'— Equipo Histolink'
                 ),
