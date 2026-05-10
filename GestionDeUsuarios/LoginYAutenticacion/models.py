@@ -18,7 +18,6 @@ class PasswordResetToken(models.Model):
 
     @classmethod
     def create_for_user(cls, user):
-        cls.objects.filter(user=user, used=False).delete()
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         return cls.objects.create(
             user=user,

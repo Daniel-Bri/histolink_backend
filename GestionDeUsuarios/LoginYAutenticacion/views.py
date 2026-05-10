@@ -236,7 +236,7 @@ class ForgotPasswordView(APIView):
             token = PasswordResetToken.create_for_user(user)
         except Exception:
             return Response(
-                {'error': 'Error interno al generar el código. La tabla de tokens puede no existir — ejecuta las migraciones.'},
+                {'error': 'Error interno al generar el código.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -247,7 +247,7 @@ class ForgotPasswordView(APIView):
                     f'Hola {user.first_name or user.username},\n\n'
                     f'Tu código de recuperación de contraseña es:\n\n'
                     f'        {token.code}\n\n'
-                    f'Este código es válido por 15 minutos.\n'
+                    f'Este código es válido por 30 minutos.\n'
                     f'Si no solicitaste este código, ignora este correo.\n\n'
                     f'— Equipo Histolink'
                 ),
@@ -256,10 +256,15 @@ class ForgotPasswordView(APIView):
                 fail_silently=False,
             )
         except Exception:
+            # Rollback: borra el token recién creado para que el anterior siga válido
+            token.delete()
             return Response(
-                {'error': 'No se pudo enviar el correo. Verifica la configuración de email en el servidor.'},
+                {'error': 'No se pudo enviar el correo. Verifica la configuración de email.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        # Email enviado — elimina tokens anteriores no usados de este usuario
+        PasswordResetToken.objects.filter(user=user, used=False).exclude(pk=token.pk).delete()
 
         return Response(_FORGOT_RESPONSE, status=status.HTTP_200_OK)
 
@@ -296,9 +301,10 @@ class ResetPasswordView(APIView):
         except User.DoesNotExist:
             return Response(_ERROR, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            token = PasswordResetToken.objects.get(user=user, code=code, used=False)
-        except PasswordResetToken.DoesNotExist:
+        token = PasswordResetToken.objects.filter(
+            user=user, code=code, used=False
+        ).order_by('-created_at').first()
+        if not token:
             return Response(_ERROR, status=status.HTTP_400_BAD_REQUEST)
 
         if not token.is_valid():
