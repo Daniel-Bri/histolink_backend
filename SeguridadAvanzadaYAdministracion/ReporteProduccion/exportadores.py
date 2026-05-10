@@ -14,6 +14,132 @@ from datetime import date
 from django.http import HttpResponse
 
 
+def _fecha_corta(valor):
+    if not valor:
+        return ""
+    texto = str(valor)
+    parte = texto.split("T")[0].split(" ")[0]
+    trozos = parte.split("-")
+    if len(trozos) == 3:
+        y, m, d = trozos
+        if len(y) == 4:
+            return f"{d}/{m}/{y}"
+    return texto
+
+
+def _detalle_por_tipo(datos: dict):
+    tipo = datos.get("tipo_reporte", "resumen_general")
+    detalle = datos.get("detalle", []) or []
+    if tipo == "consultas":
+        headers = ["Paciente", "CI", "Ficha", "Fecha consulta", "Médico", "Motivo", "CIE-10", "Diagnóstico", "Estado", "Nivel urgencia"]
+        rows = [
+            [
+                r.get("paciente", ""),
+                r.get("ci", ""),
+                r.get("numero_ficha", ""),
+                str(r.get("fecha_consulta", "")),
+                r.get("medico", ""),
+                r.get("motivo_consulta", ""),
+                r.get("codigo_cie10", ""),
+                r.get("diagnostico", ""),
+                r.get("estado", ""),
+                r.get("nivel_urgencia", ""),
+            ]
+            for r in detalle
+        ]
+        return "Consultas", headers, rows
+    if tipo == "triajes":
+        headers = ["Paciente", "Fecha", "Nivel urgencia", "FC", "FR", "Temperatura", "Saturación", "EVA", "Estado"]
+        rows = [
+            [
+                r.get("paciente", ""),
+                str(r.get("fecha", "")),
+                r.get("nivel_urgencia", ""),
+                r.get("fc", ""),
+                r.get("fr", ""),
+                r.get("temperatura", ""),
+                r.get("saturacion", ""),
+                r.get("eva", ""),
+                r.get("estado", ""),
+            ]
+            for r in detalle
+        ]
+        return "Triajes", headers, rows
+    if tipo in {"recetas", "recetas_emitidas", "recetas_dispensadas", "recetas_anuladas"}:
+        headers = ["Número receta", "Fecha emisión", "Fecha dispensación", "Paciente", "Médico", "Dispensada por", "Estado", "Observaciones"]
+        rows = [
+            [
+                r.get("numero_receta", ""),
+                str(r.get("fecha_emision", "")),
+                str(r.get("fecha_dispensacion", "")),
+                r.get("paciente", ""),
+                r.get("medico", ""),
+                r.get("dispensada_por", ""),
+                r.get("estado", ""),
+                r.get("observaciones", "") or r.get("motivo_anulacion", ""),
+            ]
+            for r in detalle
+        ]
+        return "Recetas", headers, rows
+    return "", [], []
+
+
+def _detalle_consultas_general(datos: dict):
+    detalle = datos.get("detalle_consultas", []) or []
+    headers = ["Paciente", "CI", "Ficha", "Fecha", "Médico", "Motivo", "CIE-10", "Diagnóstico", "Estado"]
+    rows = [
+        [
+            r.get("paciente", ""),
+            r.get("ci", ""),
+            r.get("numero_ficha", ""),
+            _fecha_corta(r.get("fecha_consulta", "")),
+            r.get("medico", ""),
+            r.get("motivo_consulta", ""),
+            r.get("codigo_cie10", ""),
+            r.get("diagnostico", ""),
+            r.get("estado", ""),
+        ]
+        for r in detalle
+    ]
+    return headers, rows
+
+
+def _detalle_triajes_general(datos: dict):
+    detalle = datos.get("detalle_triajes", []) or []
+    headers = ["Paciente", "Fecha", "Nivel urgencia", "FC", "FR", "Temperatura", "Saturación", "EVA", "Estado"]
+    rows = [
+        [
+            r.get("paciente", ""),
+            _fecha_corta(r.get("fecha", "")),
+            r.get("nivel_urgencia", ""),
+            r.get("fc", ""),
+            r.get("fr", ""),
+            r.get("temperatura", ""),
+            r.get("saturacion", ""),
+            r.get("eva", ""),
+            r.get("estado", ""),
+        ]
+        for r in detalle
+    ]
+    return headers, rows
+
+
+def _detalle_recetas_general(datos: dict):
+    detalle = datos.get("detalle_recetas", []) or []
+    headers = ["Número receta", "Fecha emisión", "Paciente", "Médico", "Estado"]
+    rows = [
+        [
+            r.get("numero_receta", ""),
+            _fecha_corta(r.get("fecha_emision", "")),
+            r.get("paciente", ""),
+            r.get("medico", ""),
+            r.get("estado", ""),
+        ]
+        for r in detalle
+    ]
+    return headers, rows
+
+
 # ── Excel ─────────────────────────────────────────────────────────────────────
 
 def exportar_excel(datos: dict) -> HttpResponse:
@@ -74,6 +200,7 @@ def exportar_excel(datos: dict) -> HttpResponse:
 
     # ── Hoja 1: Resumen ───────────────────────────────────────────────────────
     resumen = datos["resumen"]
+    tipo = datos.get("tipo_reporte", "resumen_general")
     _hoja_tabla(
         "Resumen",
         "Resumen del Periodo",
@@ -87,47 +214,86 @@ def exportar_excel(datos: dict) -> HttpResponse:
             ["Tasa de derivación (%)",       resumen["tasa_derivacion_pct"]],
         ],
     )
-
-    # ── Hoja 2: Triajes por nivel ─────────────────────────────────────────────
-    _hoja_tabla(
-        "Triajes por Nivel",
-        "Distribucion de Triajes por Nivel de Urgencia",
-        ["Nivel", "Total", "Porcentaje (%)"],
-        [
-            [r["nivel_urgencia"], r["total"], r["porcentaje"]]
-            for r in datos["triajes_por_nivel"]
-        ],
-    )
-
-    # ── Hoja 3: Producción por médico ─────────────────────────────────────────
-    _hoja_tabla(
-        "Produccion Medicos",
-        "Produccion por Medico",
-        ["Médico", "Consultas", "Recetas emitidas", "Derivaciones"],
-        [
-            [r["medico"], r["consultas"], r["recetas"], r["derivaciones"]]
-            for r in datos["produccion_por_medico"]
-        ],
-    )
-
-    # ── Hoja 4: Top diagnósticos ──────────────────────────────────────────────
-    _hoja_tabla(
-        "Top Diagnosticos",
-        "Top 10 Diagnosticos CIE-10",
-        ["Código CIE-10", "Descripción", "Total consultas"],
-        [
-            [r["codigo"], r["descripcion"], r["total"]]
-            for r in datos["top_diagnosticos"]
-        ],
-    )
-
-    # ── Hoja 5: Consultas por día ─────────────────────────────────────────────
-    _hoja_tabla(
-        "Consultas por Dia",
-        "Volumen de Consultas por Dia",
-        ["Fecha", "Total"],
-        [[r["fecha"], r["total"]] for r in datos["consultas_por_dia"]],
-    )
+    if tipo == "resumen_general":
+        _hoja_tabla(
+            "Triajes por Nivel",
+            "Distribucion de Triajes por Nivel de Urgencia",
+            ["Nivel", "Total", "Porcentaje (%)"],
+            [
+                [r["nivel_urgencia"], r["total"], r["porcentaje"]]
+                for r in datos["triajes_por_nivel"]
+            ],
+        )
+        _hoja_tabla(
+            "Produccion Medicos",
+            "Produccion por Medico",
+            ["Médico", "Consultas", "Recetas emitidas", "Derivaciones"],
+            [
+                [r["medico"], r["consultas"], r["recetas"], r["derivaciones"]]
+                for r in datos["produccion_por_medico"]
+            ],
+        )
+        _hoja_tabla(
+            "Top Diagnosticos",
+            "Top 10 Diagnosticos CIE-10",
+            ["Código CIE-10", "Descripción", "Total consultas"],
+            [
+                [r["codigo"], r["descripcion"], r["total"]]
+                for r in datos["top_diagnosticos"]
+            ],
+        )
+        _hoja_tabla(
+            "Consultas por Dia",
+            "Volumen de Consultas por Dia",
+            ["Fecha", "Total"],
+            [[r["fecha"], r["total"]] for r in datos["consultas_por_dia"]],
+        )
+        headers_c, rows_c = _detalle_consultas_general(datos)
+        _hoja_tabla(
+            "Consultas",
+            "Detalle de Consultas",
+            headers_c,
+            rows_c or [["No hay filas de detalle para exportar"] + [""] * (len(headers_c) - 1)],
+        )
+        headers_r, rows_r = _detalle_recetas_general(datos)
+        _hoja_tabla(
+            "Recetas",
+            "Detalle de Recetas",
+            headers_r,
+            rows_r or [["No hay filas de detalle para exportar"] + [""] * (len(headers_r) - 1)],
+        )
+        headers_t, rows_t = _detalle_triajes_general(datos)
+        _hoja_tabla(
+            "Triajes",
+            "Detalle de Triajes",
+            headers_t,
+            rows_t or [["No hay filas de detalle para exportar"] + [""] * (len(headers_t) - 1)],
+        )
+    elif tipo == "triajes":
+        _hoja_tabla(
+            "Triajes por Nivel",
+            "Distribucion de Triajes por Nivel de Urgencia",
+            ["Nivel", "Total", "Porcentaje (%)"],
+            [
+                [r["nivel_urgencia"], r["total"], r["porcentaje"]]
+                for r in datos.get("triajes_por_nivel", [])
+            ] or [["Sin datos", 0, 0]],
+        )
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        _hoja_tabla(
+            seccion or "Detalle",
+            f"Detalle de {seccion or 'Reporte'}",
+            headers or ["Sin datos"],
+            rows or [["No hay filas de detalle para exportar"]],
+        )
+    else:
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        _hoja_tabla(
+            seccion or "Detalle",
+            f"Detalle de {seccion or 'Reporte'}",
+            headers or ["Sin datos"],
+            rows or [["No hay filas de detalle para exportar"]],
+        )
 
     # ── Respuesta HTTP ────────────────────────────────────────────────────────
     buffer = io.BytesIO()
@@ -152,16 +318,23 @@ def exportar_csv(datos: dict) -> HttpResponse:
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
     response.write("﻿")  # BOM para Excel en Windows
 
-    writer = csv.writer(response)
+    # Delimitador ';' para mejor apertura directa en Excel regional ES.
+    writer = csv.writer(response, delimiter=";")
     resumen = datos["resumen"]
+    filtros = datos.get("filtros_aplicados", {}) or {}
 
-    # Encabezado del archivo
+    # Encabezado
     writer.writerow(["REPORTE DE PRODUCCIÓN Y FLUJO DE ATENCIÓN — HISTOLINK"])
     writer.writerow([f"Periodo: {periodo['desde']} — {periodo['hasta']}"])
+    if filtros:
+        writer.writerow(["Filtros aplicados"])
+        writer.writerow(["Filtro", "Valor"])
+        for k, v in filtros.items():
+            writer.writerow([k, v])
     writer.writerow([])
 
-    # Resumen
-    writer.writerow(["=== RESUMEN ==="])
+    tipo = datos.get("tipo_reporte", "resumen_general")
+    writer.writerow(["Resumen"])
     writer.writerow(["Indicador", "Valor"])
     writer.writerow(["Total consultas",         resumen["total_consultas"]])
     writer.writerow(["Total triajes",            resumen["total_triajes"]])
@@ -170,33 +343,66 @@ def exportar_csv(datos: dict) -> HttpResponse:
     writer.writerow(["Recetas anuladas",         resumen["total_recetas_anuladas"]])
     writer.writerow(["Tasa de derivacion (%)",   resumen["tasa_derivacion_pct"]])
     writer.writerow([])
-
-    # Triajes
-    writer.writerow(["=== TRIAJES POR NIVEL ==="])
-    writer.writerow(["Nivel", "Total", "Porcentaje (%)"])
-    for r in datos["triajes_por_nivel"]:
-        writer.writerow([r["nivel_urgencia"], r["total"], r["porcentaje"]])
-    writer.writerow([])
-
-    # Producción
-    writer.writerow(["=== PRODUCCION POR MEDICO ==="])
-    writer.writerow(["Medico", "Consultas", "Recetas emitidas", "Derivaciones"])
-    for r in datos["produccion_por_medico"]:
-        writer.writerow([r["medico"], r["consultas"], r["recetas"], r["derivaciones"]])
-    writer.writerow([])
-
-    # Diagnósticos
-    writer.writerow(["=== TOP 10 DIAGNOSTICOS ==="])
-    writer.writerow(["Codigo CIE-10", "Descripcion", "Total"])
-    for r in datos["top_diagnosticos"]:
-        writer.writerow([r["codigo"], r["descripcion"], r["total"]])
-    writer.writerow([])
-
-    # Consultas por día
-    writer.writerow(["=== CONSULTAS POR DIA ==="])
-    writer.writerow(["Fecha", "Total"])
-    for r in datos["consultas_por_dia"]:
-        writer.writerow([r["fecha"], r["total"]])
+    if tipo == "resumen_general":
+        writer.writerow(["Triajes por nivel"])
+        writer.writerow(["Nivel", "Total", "Porcentaje (%)"])
+        for r in datos["triajes_por_nivel"]:
+            writer.writerow([r["nivel_urgencia"], r["total"], r["porcentaje"]])
+        writer.writerow([])
+        h_c, r_c = _detalle_consultas_general(datos)
+        writer.writerow(["Detalle de consultas"])
+        writer.writerow(h_c)
+        for fila in r_c:
+            writer.writerow(fila)
+        writer.writerow([])
+        h_r, r_r = _detalle_recetas_general(datos)
+        writer.writerow(["Detalle de recetas"])
+        writer.writerow(h_r)
+        for fila in r_r:
+            writer.writerow(fila)
+        writer.writerow([])
+        h_t, r_t = _detalle_triajes_general(datos)
+        writer.writerow(["Detalle de triajes"])
+        writer.writerow(h_t)
+        for fila in r_t:
+            writer.writerow(fila)
+    elif tipo == "triajes":
+        writer.writerow(["Triajes por nivel"])
+        writer.writerow(["Nivel", "Total", "Porcentaje (%)"])
+        for r in datos.get("triajes_por_nivel", []):
+            writer.writerow([r.get("nivel_urgencia"), r.get("total"), r.get("porcentaje")])
+        writer.writerow([])
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        writer.writerow([f"Detalle {seccion}" if seccion else "Detalle"])
+        writer.writerow(headers or ["Sin datos"])
+        for r in rows:
+            fila = list(r)
+            for i, h in enumerate(headers or []):
+                if "fecha" in str(h).lower():
+                    fila[i] = _fecha_corta(fila[i])
+            writer.writerow(fila)
+    else:
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        writer.writerow([])
+        writer.writerow([f"Detalle {seccion}" if seccion else "Detalle"])
+        if tipo == "consultas":
+            headers = ["Paciente", "CI", "Ficha", "Fecha", "Médico", "Motivo", "CIE-10", "Diagnóstico", "Estado"]
+            writer.writerow(headers)
+            for r in rows:
+                # filas consultas de _detalle_por_tipo:
+                # Paciente, CI, Ficha, Fecha consulta, Médico, Motivo, CIE-10, Diagnóstico, Estado, Nivel urgencia
+                fila = list(r[:9])
+                fila[3] = _fecha_corta(fila[3])
+                writer.writerow(fila)
+        else:
+            writer.writerow(headers or ["Sin datos"])
+            for r in rows:
+                fila = list(r)
+                # Formateo básico de fechas para recetas/triajes si aplica
+                for i, h in enumerate(headers or []):
+                    if "fecha" in str(h).lower():
+                        fila[i] = _fecha_corta(fila[i])
+                writer.writerow(fila)
 
     return response
 
@@ -244,14 +450,21 @@ def exportar_pdf(datos: dict) -> HttpResponse:
             ("BACKGROUND",  (0, 0), (-1, 0),  COLOR_HEADER),
             ("TEXTCOLOR",   (0, 0), (-1, 0),  colors.white),
             ("FONTNAME",    (0, 0), (-1, 0),  "Helvetica-Bold"),
-            ("FONTSIZE",    (0, 0), (-1, 0),  9),
+            ("FONTSIZE",    (0, 0), (-1, 0),  8.5),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_FILA]),
-            ("FONTSIZE",    (0, 1), (-1, -1), 8),
+            ("FONTSIZE",    (0, 1), (-1, -1), 7.5),
             ("GRID",        (0, 0), (-1, -1), 0.4, colors.HexColor("#CCCCCC")),
             ("VALIGN",      (0, 0), (-1, -1), "MIDDLE"),
+            ("WORDWRAP",    (0, 0), (-1, -1), "CJK"),
             ("TOPPADDING",  (0, 0), (-1, -1), 4),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ])
+
+    estilo_celda = ParagraphStyle("celda_pdf", parent=estilos["Normal"], fontSize=7.5, leading=8.8)
+    estilo_celda_small = ParagraphStyle("celda_pdf_small", parent=estilos["Normal"], fontSize=7, leading=8)
+
+    def _p(valor, small=False):
+        return Paragraph(str(valor or ""), estilo_celda_small if small else estilo_celda)
 
     elementos = []
 
@@ -265,7 +478,7 @@ def exportar_pdf(datos: dict) -> HttpResponse:
     ))
     elementos.append(Spacer(1, 0.5 * cm))
 
-    # Resumen
+    tipo = datos.get("tipo_reporte", "resumen_general")
     elementos.append(Paragraph("Resumen del Periodo", estilo_seccion))
     tabla_resumen = Table(
         [
@@ -282,38 +495,106 @@ def exportar_pdf(datos: dict) -> HttpResponse:
     tabla_resumen.setStyle(_estilo_tabla(2))
     elementos.append(tabla_resumen)
     elementos.append(Spacer(1, 0.4 * cm))
+    if tipo == "resumen_general":
+        elementos.append(Paragraph("Distribución de Triajes por Nivel", estilo_seccion))
+        tabla_triajes_nivel = Table(
+            [["Nivel", "Total", "Porcentaje (%)"]] +
+            [[r["nivel_urgencia"], r["total"], r["porcentaje"]] for r in datos["triajes_por_nivel"]],
+            colWidths=[5 * cm, 3.5 * cm, 4.5 * cm],
+            repeatRows=1,
+        )
+        tabla_triajes_nivel.setStyle(_estilo_tabla(3))
+        elementos.append(tabla_triajes_nivel)
+        elementos.append(Spacer(1, 0.4 * cm))
 
-    # Triajes por nivel
-    elementos.append(Paragraph("Distribución de Triajes por Nivel", estilo_seccion))
-    filas_triaje = [["Nivel", "Total", "Porcentaje (%)"]] + [
-        [r["nivel_urgencia"], r["total"], r["porcentaje"]]
-        for r in datos["triajes_por_nivel"]
-    ]
-    tabla_triaje = Table(filas_triaje, colWidths=[8 * cm, 5 * cm, 5 * cm])
-    tabla_triaje.setStyle(_estilo_tabla(3))
-    elementos.append(tabla_triaje)
-    elementos.append(Spacer(1, 0.4 * cm))
+        h_c, r_c = _detalle_consultas_general(datos)
+        elementos.append(Paragraph("Detalle de Consultas", estilo_seccion))
+        # Versión PDF reducida para legibilidad (sin Ficha ni Diagnóstico largo).
+        h_c_pdf = ["Paciente", "CI", "Fecha", "Médico", "Motivo", "CIE-10", "Estado"]
+        r_c_pdf = []
+        for fila in r_c:
+            r_c_pdf.append([
+                _p(fila[0]),                    # Paciente
+                _p(fila[1], small=True),        # CI
+                _p(_fecha_corta(fila[3]), small=True),  # Fecha
+                _p(fila[4]),                    # Médico
+                _p(fila[5]),                    # Motivo
+                _p(fila[6], small=True),        # CIE-10
+                _p(fila[8], small=True),        # Estado
+            ])
+        body_c = [h_c_pdf] + (r_c_pdf if r_c_pdf else [[_p("No hay filas de detalle para exportar")] + [""] * (len(h_c_pdf) - 1)])
+        tabla_c = Table(
+            body_c,
+            colWidths=[4.1 * cm, 1.9 * cm, 2.0 * cm, 3.3 * cm, 8.9 * cm, 1.7 * cm, 2.0 * cm],
+            repeatRows=1,
+        )
+        tabla_c.setStyle(_estilo_tabla(len(h_c_pdf)))
+        elementos.append(tabla_c)
+        elementos.append(Spacer(1, 0.4 * cm))
 
-    # Producción por médico
-    elementos.append(Paragraph("Producción por Médico", estilo_seccion))
-    filas_medico = [["Médico", "Consultas", "Recetas", "Derivaciones"]] + [
-        [r["medico"], r["consultas"], r["recetas"], r["derivaciones"]]
-        for r in datos["produccion_por_medico"]
-    ]
-    tabla_medico = Table(filas_medico, colWidths=[11 * cm, 5 * cm, 5 * cm, 5 * cm])
-    tabla_medico.setStyle(_estilo_tabla(4))
-    elementos.append(tabla_medico)
-    elementos.append(Spacer(1, 0.4 * cm))
+        h_r, r_r = _detalle_recetas_general(datos)
+        elementos.append(Paragraph("Detalle de Recetas Emitidas/Filtradas", estilo_seccion))
+        body_r = [h_r] + ([[ _p(c) for c in row ] for row in r_r] if r_r else [[_p("No hay filas de detalle para exportar")] + [""] * (len(h_r) - 1)])
+        tabla_r = Table(body_r, colWidths=[3.5 * cm, 2.4 * cm, 6.0 * cm, 5.2 * cm, 2.2 * cm], repeatRows=1)
+        tabla_r.setStyle(_estilo_tabla(len(h_r)))
+        elementos.append(tabla_r)
+        elementos.append(Spacer(1, 0.4 * cm))
 
-    # Top diagnósticos
-    elementos.append(Paragraph("Top 10 Diagnósticos CIE-10", estilo_seccion))
-    filas_cie = [["Código CIE-10", "Descripción", "Total"]] + [
-        [r["codigo"], r["descripcion"] or "—", r["total"]]
-        for r in datos["top_diagnosticos"]
-    ]
-    tabla_cie = Table(filas_cie, colWidths=[5 * cm, 18 * cm, 4 * cm])
-    tabla_cie.setStyle(_estilo_tabla(3))
-    elementos.append(tabla_cie)
+        h_t, r_t = _detalle_triajes_general(datos)
+        elementos.append(Paragraph("Detalle de Triajes", estilo_seccion))
+        body_t = [h_t] + ([[ _p(c) for c in row ] for row in r_t] if r_t else [[_p("No hay filas de detalle para exportar")] + [""] * (len(h_t) - 1)])
+        tabla_t = Table(body_t, colWidths=[4.0 * cm, 2.2 * cm, 2.4 * cm, 1.5 * cm, 1.5 * cm, 2.2 * cm, 2.2 * cm, 1.2 * cm, 2.2 * cm], repeatRows=1)
+        tabla_t.setStyle(_estilo_tabla(len(h_t)))
+        elementos.append(tabla_t)
+    elif tipo == "triajes":
+        elementos.append(Paragraph("Distribución de Triajes por Nivel", estilo_seccion))
+        tabla_triajes_nivel = Table(
+            [["Nivel", "Total", "Porcentaje (%)"]] +
+            [[r.get("nivel_urgencia"), r.get("total"), r.get("porcentaje")] for r in datos.get("triajes_por_nivel", [])],
+            colWidths=[5 * cm, 3.5 * cm, 4.5 * cm],
+            repeatRows=1,
+        )
+        tabla_triajes_nivel.setStyle(_estilo_tabla(3))
+        elementos.append(tabla_triajes_nivel)
+        elementos.append(Spacer(1, 0.4 * cm))
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        elementos.append(Paragraph(f"Detalle de {seccion or 'Reporte'}", estilo_seccion))
+        body = [headers] + ([[ _p(c) for c in row ] for row in rows] if rows else [[_p("No hay filas de detalle para exportar")]])
+        cols = len(headers) if headers else 1
+        col_widths = [24 * cm / cols for _ in range(cols)] if cols > 0 else [24 * cm]
+        tabla = Table(body, colWidths=col_widths, repeatRows=1)
+        tabla.setStyle(_estilo_tabla(cols))
+        elementos.append(tabla)
+    else:
+        seccion, headers, rows = _detalle_por_tipo(datos)
+        elementos.append(Paragraph(f"Detalle de {seccion or 'Reporte'}", estilo_seccion))
+        if tipo == "consultas":
+            # PDF legible para consultas: sin "Nivel urgencia", con wrapping y anchos fijos.
+            headers_pdf = ["Paciente", "CI", "Fecha", "Médico", "Motivo", "CIE-10", "Estado"]
+            rows_pdf = []
+            for r in rows:
+                fila = [
+                    _p(r[0]),                    # Paciente
+                    _p(r[1], small=True),        # CI
+                    _p(_fecha_corta(r[3]), small=True),  # Fecha
+                    _p(r[4]),                    # Medico
+                    _p(r[5]),                    # Motivo
+                    _p(r[6], small=True),        # CIE-10
+                    _p(r[8], small=True),        # Estado
+                ]
+                rows_pdf.append(fila)
+            body = [headers_pdf] + (rows_pdf if rows_pdf else [[_p("No hay filas de detalle para exportar")] + [""] * 6])
+            col_widths = [4.1 * cm, 1.9 * cm, 2.0 * cm, 3.3 * cm, 8.9 * cm, 1.7 * cm, 2.0 * cm]
+            tabla = Table(body, colWidths=col_widths, repeatRows=1)
+            tabla.setStyle(_estilo_tabla(len(headers_pdf)))
+            elementos.append(tabla)
+        else:
+            body = [headers] + (rows if rows else [["No hay filas de detalle para exportar"]])
+            cols = len(headers) if headers else 1
+            col_widths = [24 * cm / cols for _ in range(cols)] if cols > 0 else [24 * cm]
+            tabla = Table(body, colWidths=col_widths, repeatRows=1)
+            tabla.setStyle(_estilo_tabla(cols))
+            elementos.append(tabla)
 
     doc.build(elementos)
     buffer.seek(0)
