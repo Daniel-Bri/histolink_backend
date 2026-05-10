@@ -16,12 +16,15 @@ Filtros disponibles (query params):
 """
 
 from datetime import date
+import logging
 
+from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 from AtencionClinica.EmisionDeRecetaMedica.models import Receta
@@ -31,6 +34,8 @@ from .exportadores import exportar_csv, exportar_excel, exportar_pdf
 from .nlp_filtros import parsear_texto
 
 NIVELES_ORDEN = ["ROJO", "NARANJA", "AMARILLO", "VERDE", "AZUL"]
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class ReporteProduccionView(APIView):
@@ -52,7 +57,10 @@ class ReporteProduccionView(APIView):
     # ── Entrada ───────────────────────────────────────────────────────────────
 
     def get(self, request):
-        params  = self._resolver_params(request)
+        params_or_response = self._resolver_params(request)
+        if isinstance(params_or_response, Response):
+            return params_or_response
+        params = params_or_response
         datos   = self._agregar(params)
         formato = params.get("formato", "json")
 
@@ -73,6 +81,9 @@ class ReporteProduccionView(APIView):
         # 1. Parsear texto libre si viene en ?q=
         q = request.query_params.get("q", "").strip()
         params = parsear_texto(q, hoy) if q else {}
+        if q:
+            logger.info("[ReporteProduccion] q recibido=%s", q)
+            logger.info("[ReporteProduccion] filtros NLP inferidos=%s", params)
 
         # 2. Los query params explícitos sobreescriben lo inferido por NLP
         if request.query_params.get("fecha_desde"):
@@ -89,6 +100,10 @@ class ReporteProduccionView(APIView):
             params["codigo_cie10"] = request.query_params["codigo_cie10"].upper()
         if request.query_params.get("formato"):
             params["formato"] = request.query_params["formato"].lower()
+        if request.query_params.get("tipo_reporte"):
+            params["tipo_reporte"] = request.query_params["tipo_reporte"].lower()
+        if q:
+            params["q"] = q
 
         # 3. Defaults de fecha si no se infirió nada
         if "fecha_desde" not in params:
@@ -96,7 +111,43 @@ class ReporteProduccionView(APIView):
         if "fecha_hasta" not in params:
             params["fecha_hasta"] = hoy.isoformat()
 
+        # 4. Validación de rango de fechas
+        try:
+            d1 = date.fromisoformat(params["fecha_desde"])
+            d2 = date.fromisoformat(params["fecha_hasta"])
+        except ValueError:
+            return Response(
+                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if d1 > d2:
+            return Response(
+                {"detail": "fecha_desde no puede ser mayor que fecha_hasta."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        logger.info(
+            "[ReporteProduccion] fecha_desde final=%s fecha_hasta final=%s",
+            params["fecha_desde"],
+            params["fecha_hasta"],
+        )
+
         return params
+
+    def _filtro_medico_q(self, medico_nombre: str) -> Q:
+        texto = (medico_nombre or "").strip()
+        if not texto:
+            return Q()
+        tokens = [t for t in texto.split() if t]
+        q = Q(first_name__icontains=texto) | Q(last_name__icontains=texto) | Q(username__icontains=texto)
+        if len(tokens) > 1:
+            q |= Q(first_name__icontains=tokens[0], last_name__icontains=tokens[-1])
+        for t in tokens:
+            q |= Q(first_name__icontains=t) | Q(last_name__icontains=t) | Q(username__icontains=t)
+        return q
+
+    def _usuarios_medico_ids(self, medico_nombre: str):
+        q = self._filtro_medico_q(medico_nombre)
+        return list(User.objects.filter(q).values_list("id", flat=True).distinct())
 
     # ── Aggregaciones principales (T037) ─────────────────────────────────────
 
@@ -107,6 +158,18 @@ class ReporteProduccionView(APIView):
         medico_nombre  = params.get("medico_nombre")
         nivel_urgencia = params.get("nivel_urgencia")
         codigo_cie10   = params.get("codigo_cie10")
+        tipo_reporte   = params.get("tipo_reporte", "resumen_general")
+        advertencias: list[str] = []
+
+        medico_ids_por_nombre = []
+        medico_nombre_no_encontrado = False
+        if medico_nombre:
+            medico_ids_por_nombre = self._usuarios_medico_ids(medico_nombre)
+            if not medico_ids_por_nombre:
+                medico_nombre_no_encontrado = True
+                advertencias.append(
+                    f"No se encontró ningún médico que coincida con '{medico_nombre}'."
+                )
 
         # ── Consultas ─────────────────────────────────────────────────────────
         qs_consultas = Consulta.objects.filter(
@@ -116,15 +179,16 @@ class ReporteProduccionView(APIView):
         )
         if medico_id:
             qs_consultas = qs_consultas.filter(medico_id=medico_id)
-        if medico_nombre:
-            qs_consultas = qs_consultas.filter(
-                Q(medico__last_name__icontains=medico_nombre) |
-                Q(medico__first_name__icontains=medico_nombre)
-            )
+        elif medico_ids_por_nombre:
+            qs_consultas = qs_consultas.filter(medico_id__in=medico_ids_por_nombre)
+        elif medico_nombre_no_encontrado:
+            qs_consultas = qs_consultas.none()
         if codigo_cie10:
             qs_consultas = qs_consultas.filter(
                 codigo_cie10_principal__icontains=codigo_cie10
             )
+        if nivel_urgencia:
+            qs_consultas = qs_consultas.filter(triaje__nivel_urgencia=nivel_urgencia)
 
         total_consultas    = qs_consultas.count()
         total_derivaciones = qs_consultas.filter(requiere_derivacion=True).count()
@@ -134,27 +198,57 @@ class ReporteProduccionView(APIView):
             hora_triaje__date__gte=fecha_desde,
             hora_triaje__date__lte=fecha_hasta,
         )
+        if medico_id:
+            qs_triajes = qs_triajes.filter(ficha__consultas__medico_id=medico_id).distinct()
+        elif medico_ids_por_nombre:
+            qs_triajes = qs_triajes.filter(ficha__consultas__medico_id__in=medico_ids_por_nombre).distinct()
+        elif medico_nombre_no_encontrado:
+            qs_triajes = qs_triajes.none()
         if nivel_urgencia:
             qs_triajes = qs_triajes.filter(nivel_urgencia=nivel_urgencia)
 
         total_triajes = qs_triajes.count()
 
         # ── Recetas ───────────────────────────────────────────────────────────
-        qs_recetas = Receta.objects.filter(
+        qs_recetas_base = Receta.objects.all()
+        logger.info("[ReporteProduccion] recetas antes del filtro=%s", qs_recetas_base.count())
+        qs_recetas = qs_recetas_base.filter(
             fecha_emision__date__gte=fecha_desde,
             fecha_emision__date__lte=fecha_hasta,
         )
         if medico_id:
             qs_recetas = qs_recetas.filter(medico_id=medico_id)
-        if medico_nombre:
-            qs_recetas = qs_recetas.filter(
-                Q(medico__last_name__icontains=medico_nombre) |
-                Q(medico__first_name__icontains=medico_nombre)
-            )
+        elif medico_ids_por_nombre:
+            qs_recetas = qs_recetas.filter(medico_id__in=medico_ids_por_nombre)
+        elif medico_nombre_no_encontrado:
+            qs_recetas = qs_recetas.none()
+        if nivel_urgencia:
+            qs_recetas = qs_recetas.filter(consulta__triaje__nivel_urgencia=nivel_urgencia)
+        logger.info("[ReporteProduccion] recetas despues del filtro=%s", qs_recetas.count())
+
+        # ── Ajuste por intención/tipo de reporte ─────────────────────────────
+        if tipo_reporte == "consultas":
+            qs_triajes = Triaje.objects.none()
+            qs_recetas = Receta.objects.none()
+        elif tipo_reporte == "triajes":
+            qs_consultas = Consulta.objects.none()
+            qs_recetas = Receta.objects.none()
+        elif tipo_reporte in {"recetas", "recetas_emitidas", "recetas_dispensadas", "recetas_anuladas"}:
+            qs_consultas = Consulta.objects.none()
+            qs_triajes = Triaje.objects.none()
+            if tipo_reporte == "recetas_emitidas":
+                qs_recetas = qs_recetas.filter(estado="EMITIDA")
+            elif tipo_reporte == "recetas_dispensadas":
+                qs_recetas = qs_recetas.filter(estado="DISPENSADA")
+            elif tipo_reporte == "recetas_anuladas":
+                qs_recetas = qs_recetas.filter(estado="ANULADA")
 
         recetas_emitidas    = qs_recetas.filter(estado="EMITIDA").count()
         recetas_dispensadas = qs_recetas.filter(estado="DISPENSADA").count()
         recetas_anuladas    = qs_recetas.filter(estado="ANULADA").count()
+
+        if codigo_cie10 and total_consultas == 0:
+            advertencias.append("No hay registros con el código CIE-10 indicado.")
 
         # ── Triajes por nivel ─────────────────────────────────────────────────
         conteo_niveles = dict(
@@ -232,23 +326,163 @@ class ReporteProduccionView(APIView):
             for r in consultas_por_dia
         ]
 
+        # ── Detalles completos (base para resumen_general y exportaciones) ───
+        detalle_consultas = list(
+            qs_consultas.values(
+                "ficha__paciente__nombres",
+                "ficha__paciente__apellido_paterno",
+                "ficha__paciente__apellido_materno",
+                "ficha__paciente__ci",
+                "ficha__correlativo",
+                "creado_en",
+                "medico__first_name",
+                "medico__last_name",
+                "motivo_consulta",
+                "codigo_cie10_principal",
+                "descripcion_cie10",
+                "impresion_diagnostica",
+                "estado",
+                "triaje__nivel_urgencia",
+            ).order_by("-creado_en")[:200]
+        )
+        detalle_consultas = [
+            {
+                "paciente": " ".join(
+                    p for p in [
+                        r.get("ficha__paciente__nombres", ""),
+                        r.get("ficha__paciente__apellido_paterno", ""),
+                        r.get("ficha__paciente__apellido_materno", ""),
+                    ] if p
+                ).strip(),
+                "ci": r.get("ficha__paciente__ci", ""),
+                "numero_ficha": r.get("ficha__correlativo", ""),
+                "fecha_consulta": str(r.get("creado_en", "")),
+                "medico": " ".join(
+                    p for p in [r.get("medico__first_name", ""), r.get("medico__last_name", "")] if p
+                ).strip(),
+                "motivo_consulta": r.get("motivo_consulta", ""),
+                "codigo_cie10": r.get("codigo_cie10_principal", ""),
+                "diagnostico": r.get("impresion_diagnostica", "") or r.get("descripcion_cie10", ""),
+                "estado": r.get("estado", ""),
+                "nivel_urgencia": r.get("triaje__nivel_urgencia", "") or "",
+            }
+            for r in detalle_consultas
+        ]
+
+        detalle_triajes = list(
+            qs_triajes.values(
+                "ficha__paciente__nombres",
+                "ficha__paciente__apellido_paterno",
+                "ficha__paciente__apellido_materno",
+                "hora_triaje",
+                "nivel_urgencia",
+                "frecuencia_cardiaca",
+                "frecuencia_respiratoria",
+                "temperatura_celsius",
+                "saturacion_oxigeno",
+                "escala_dolor",
+                "ficha__estado",
+            ).order_by("-hora_triaje")[:200]
+        )
+        detalle_triajes = [
+            {
+                "paciente": " ".join(
+                    p for p in [
+                        r.get("ficha__paciente__nombres", ""),
+                        r.get("ficha__paciente__apellido_paterno", ""),
+                        r.get("ficha__paciente__apellido_materno", ""),
+                    ] if p
+                ).strip(),
+                "fecha": str(r.get("hora_triaje", "")),
+                "nivel_urgencia": r.get("nivel_urgencia", ""),
+                "fc": r.get("frecuencia_cardiaca"),
+                "fr": r.get("frecuencia_respiratoria"),
+                "temperatura": r.get("temperatura_celsius"),
+                "saturacion": r.get("saturacion_oxigeno"),
+                "eva": r.get("escala_dolor"),
+                "estado": r.get("ficha__estado", ""),
+            }
+            for r in detalle_triajes
+        ]
+
+        detalle_recetas = list(
+            qs_recetas.values(
+                "numero_receta",
+                "estado",
+                "fecha_emision",
+                "fecha_dispensacion",
+                "dispensada_por__first_name",
+                "dispensada_por__last_name",
+                "observaciones",
+                "medico__first_name",
+                "medico__last_name",
+                "consulta__ficha__paciente__nombres",
+                "consulta__ficha__paciente__apellido_paterno",
+                "consulta__ficha__paciente__apellido_materno",
+            ).order_by("-fecha_emision")[:200]
+        )
+        detalle_recetas = [
+            {
+                "numero_receta": r.get("numero_receta", ""),
+                "fecha_emision": str(r.get("fecha_emision", "")),
+                "fecha_dispensacion": str(r.get("fecha_dispensacion", "")) if r.get("fecha_dispensacion") else "",
+                "paciente": " ".join(
+                    p for p in [
+                        r.get("consulta__ficha__paciente__nombres", ""),
+                        r.get("consulta__ficha__paciente__apellido_paterno", ""),
+                        r.get("consulta__ficha__paciente__apellido_materno", ""),
+                    ] if p
+                ).strip(),
+                "medico": " ".join(
+                    p for p in [r.get("medico__first_name", ""), r.get("medico__last_name", "")] if p
+                ).strip(),
+                "dispensada_por": " ".join(
+                    p for p in [r.get("dispensada_por__first_name", ""), r.get("dispensada_por__last_name", "")] if p
+                ).strip(),
+                "estado": r.get("estado", ""),
+                "observaciones": r.get("observaciones", ""),
+                "motivo_anulacion": r.get("observaciones", ""),
+            }
+            for r in detalle_recetas
+        ]
+
+        # ── Detalle dinámico según tipo_reporte ──────────────────────────────
+        if tipo_reporte in {"resumen_general", "consultas"}:
+            detalle = detalle_consultas
+        elif tipo_reporte == "triajes":
+            detalle = detalle_triajes
+        elif tipo_reporte in {"recetas", "recetas_emitidas", "recetas_dispensadas", "recetas_anuladas"}:
+            detalle = detalle_recetas
+        else:
+            detalle = []
+
         # ── Tasa de derivación ────────────────────────────────────────────────
         tasa_derivacion = (
             round(total_derivaciones * 100 / total_consultas, 1)
             if total_consultas else 0.0
         )
 
-        return {
+        if total_consultas == 0 and total_triajes == 0 and recetas_emitidas == 0 and recetas_dispensadas == 0 and recetas_anuladas == 0:
+            advertencias.append("No se encontraron registros para los filtros aplicados.")
+
+        response = {
+            "tipo_reporte": tipo_reporte,
             "periodo": {
                 "desde":  fecha_desde,
                 "hasta":  fecha_hasta,
+                "fecha_desde": fecha_desde,
+                "fecha_hasta": fecha_hasta,
             },
             "filtros_aplicados": {
                 k: v for k, v in {
+                    "fecha_desde":    fecha_desde,
+                    "fecha_hasta":    fecha_hasta,
                     "medico_id":      medico_id,
                     "medico_nombre":  medico_nombre,
                     "nivel_urgencia": nivel_urgencia,
                     "codigo_cie10":   codigo_cie10,
+                    "tipo_reporte":   tipo_reporte,
+                    "q":              params.get("q"),
                 }.items() if v
             },
             "resumen": {
@@ -259,8 +493,24 @@ class ReporteProduccionView(APIView):
                 "total_recetas_anuladas":   recetas_anuladas,
                 "tasa_derivacion_pct":      tasa_derivacion,
             },
-            "triajes_por_nivel":    triajes_por_nivel,
+            "advertencias": advertencias,
+            "detalle": detalle,
             "produccion_por_medico": produccion_por_medico,
-            "top_diagnosticos":     top_diagnosticos,
-            "consultas_por_dia":    consultas_por_dia,
+            "top_diagnosticos": top_diagnosticos,
+            "consultas_por_dia": consultas_por_dia,
         }
+
+        if tipo_reporte == "resumen_general":
+            response["detalle_consultas"] = detalle_consultas
+            response["detalle_triajes"] = detalle_triajes
+            response["detalle_recetas"] = detalle_recetas
+            response["triajes_por_nivel"] = triajes_por_nivel
+        elif tipo_reporte == "consultas":
+            response["detalle_consultas"] = detalle_consultas
+        elif tipo_reporte == "triajes":
+            response["detalle_triajes"] = detalle_triajes
+            response["triajes_por_nivel"] = triajes_por_nivel
+        elif tipo_reporte in {"recetas", "recetas_emitidas", "recetas_dispensadas", "recetas_anuladas"}:
+            response["detalle_recetas"] = detalle_recetas
+
+        return response
