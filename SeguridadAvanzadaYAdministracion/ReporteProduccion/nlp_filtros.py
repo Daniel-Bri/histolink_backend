@@ -101,6 +101,12 @@ MEDICO_STOPWORDS = {
     "de", "del", "al", "en", "este", "esta", "mayo", "abril", "marzo",
 }
 
+PALABRAS_REPORTE = {
+    "consulta", "consultas", "triaje", "triajes", "receta", "recetas",
+    "reporte", "reportes", "resumen", "general", "emitidas", "emitida",
+    "dispensadas", "dispensada", "anuladas", "anulada",
+}
+
 TIPOS_REPORTE_KEYWORDS = [
     ("recetas_emitidas", ["recetas emitidas", "receta emitida", "emitidas"]),
     ("recetas_dispensadas", ["recetas dispensadas", "receta dispensada", "dispensadas"]),
@@ -245,6 +251,22 @@ def _extraer_periodo(texto: str, hoy: date) -> dict:
             except ValueError:
                 continue
 
+    # Día único explícito: "del primero de mayo", "el 1 de mayo", "primero de mayo"
+    if not resultado:
+        patron_dia_unico = r"(?:\bdel?\b|\bel\b)?\s*([a-z0-9]+)\s+de\s+([a-z]+)(?:\s+de\s+(20\d{2}))?"
+        for m in re.finditer(patron_dia_unico, texto):
+            d_txt, mes_txt, anio_txt = m.groups()
+            d = _texto_a_dia(d_txt)
+            mes = MESES.get(mes_txt)
+            anio = int(anio_txt) if anio_txt else hoy.year
+            if not (d and mes):
+                continue
+            try:
+                f = date(anio, mes, d)
+                return {"fecha_desde": f.isoformat(), "fecha_hasta": f.isoformat()}
+            except ValueError:
+                continue
+
     # Mes + año explícito: "abril 2026" / "en abril de 2026"
     if not resultado:
         anio_match = re.search(r"\b(20\d{2})\b", texto)
@@ -335,7 +357,8 @@ def _extraer_medico(texto: str) -> Optional[str]:
     # "consultas de Mario del 1 al 9 de mayo"
     if not tiene_marcador_medico:
         m = re.search(
-            r"\b(?:reporte|consultas|consulta|recetas|receta|triajes|triaje)\s+de\s+([a-z]+(?:\s+[a-z]+)?)\b",
+            r"\b(?:reporte|consultas|consulta|recetas|receta|triajes|triaje)"
+            r"(?:\s+(?:emitidas?|dispensadas?|anuladas?|general))?\s+de\s+([a-z]+(?:\s+[a-z]+)?)\b",
             texto,
             re.IGNORECASE,
         )
@@ -343,7 +366,7 @@ def _extraer_medico(texto: str) -> Optional[str]:
             nombre = m.group(1).strip()
             nombre = re.split(r"\b(?:de|del|al|en|con|desde|hasta|sus|este|esta)\b", nombre, maxsplit=1)[0].strip()
             tokens = [t for t in nombre.split() if t]
-            if tokens and not all(t in MEDICO_STOPWORDS for t in tokens):
+            if tokens and not all(t in MEDICO_STOPWORDS for t in tokens) and not any(t in PALABRAS_REPORTE for t in tokens):
                 return " ".join(p.capitalize() for p in tokens)
 
     return None
