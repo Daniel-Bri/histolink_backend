@@ -5,52 +5,51 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 
-from .models import RegistroAuditoria
+from SeguridadAvanzadaYAdministracion.Auditoria.models import RegistroAuditoria
 from .serializers import RegistroAuditoriaSerializer
 
 _ROLES_PERMITIDOS = {'Auditor', 'Director', 'Administrativo'}
 
-_ACCION_TO_METODOS = {
-    'CREAR':      ['POST'],
-    'ACTUALIZAR': ['PUT', 'PATCH'],
-    'ELIMINAR':   ['DELETE'],
+# Mapeo frontend (CREAR/ACTUALIZAR/ELIMINAR/LOGIN/LOGOUT) → acciones reales del modelo
+_FILTRO_ACCION = {
+    'CREAR':      ['CREATE'],
+    'ACTUALIZAR': ['UPDATE', 'FIRMAR', 'COMPLETAR', 'DISPENSAR'],
+    'ELIMINAR':   ['DELETE', 'ANULAR'],
+    'LOGIN':      ['LOGIN'],
+    'LOGOUT':     ['LOGOUT'],
 }
 
-_MODULO_TO_PREFIXES = {
-    'PACIENTES':       ['/api/pacientes'],
-    'USUARIOS':        ['/api/auth', '/api/personal'],
-    'ATENCION_CLINICA': ['/api/triaje', '/api/consultas', '/api/clinica', '/api/ordenes'],
-    'APERTURA_FICHA':  ['/api/fichas'],
-    'REPORTES':        ['/api/reportes', '/api/auditoria'],
-    'CONFIGURACION':   ['/api/admin/backup', '/api/tenants'],
+_FILTRO_MODULO_MODELOS = {
+    'PACIENTES':       ['Paciente', 'Antecedente'],
+    'USUARIOS':        ['User', 'PersonalSalud'],
+    'ATENCION_CLINICA': ['Triaje', 'Consulta', 'RecetaMedica', 'OrdenEstudio'],
+    'APERTURA_FICHA':  ['Ficha'],
 }
 
-_ORDERING_MAP = {
-    '-timestamp':        '-creado_en',
-    'timestamp':         'creado_en',
-    '-usuario_username': '-username',
-    'usuario_username':  'username',
+_FILTRO_MODULO_PREFIXES = {
+    'REPORTES':    ['/api/reportes', '/api/auditoria'],
+    'CONFIGURACION': ['/api/admin', '/api/tenants'],
 }
 
 
 class AuditoriaPagination(PageNumberPagination):
-    page_size            = 20
+    page_size             = 20
     page_size_query_param = 'page_size'
-    max_page_size        = 200
+    max_page_size         = 200
 
 
 class RegistroAuditoriaListView(generics.ListAPIView):
     """
     GET /api/auditoria/
     Filtros: ?usuario=&accion=&modulo=&fecha_desde=&fecha_hasta=&ordering=
-    Roles permitidos: Auditor, Director, Administrativo, superadmin.
+    Roles: Auditor, Director, Administrativo, superadmin.
     """
-    serializer_class  = RegistroAuditoriaSerializer
+    serializer_class   = RegistroAuditoriaSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class  = AuditoriaPagination
+    pagination_class   = AuditoriaPagination
 
     def get_queryset(self):
-        user = self.request.user
+        user   = self.request.user
         grupos = set(user.groups.values_list('name', flat=True))
         if not (user.is_superuser or grupos & _ROLES_PERMITIDOS):
             raise PermissionDenied('Solo Auditor, Director o Administrativo pueden ver la auditoría.')
@@ -60,32 +59,32 @@ class RegistroAuditoriaListView(generics.ListAPIView):
 
         usuario = params.get('usuario')
         if usuario:
-            qs = qs.filter(username__icontains=usuario)
+            qs = qs.filter(usuario_nombre__icontains=usuario)
 
         accion = params.get('accion', '').upper()
-        if accion in _ACCION_TO_METODOS:
-            qs = qs.filter(metodo__in=_ACCION_TO_METODOS[accion])
+        if accion in _FILTRO_ACCION:
+            qs = qs.filter(accion__in=_FILTRO_ACCION[accion])
 
         modulo = params.get('modulo', '').upper()
-        if modulo in _MODULO_TO_PREFIXES:
+        if modulo in _FILTRO_MODULO_MODELOS:
+            qs = qs.filter(modelo__in=_FILTRO_MODULO_MODELOS[modulo])
+        elif modulo in _FILTRO_MODULO_PREFIXES:
             q = Q()
-            for p in _MODULO_TO_PREFIXES[modulo]:
-                q |= Q(path__startswith=p)
+            for p in _FILTRO_MODULO_PREFIXES[modulo]:
+                q |= Q(endpoint__startswith=p)
             qs = qs.filter(q)
 
         fecha_desde = params.get('fecha_desde')
         if fecha_desde:
-            qs = qs.filter(creado_en__gte=fecha_desde)
+            qs = qs.filter(timestamp__gte=fecha_desde)
 
         fecha_hasta = params.get('fecha_hasta')
         if fecha_hasta:
-            qs = qs.filter(creado_en__lte=fecha_hasta)
+            qs = qs.filter(timestamp__lte=fecha_hasta)
 
-        ordering_param = params.get('ordering', '-creado_en')
-        ordering = _ORDERING_MAP.get(ordering_param, ordering_param)
-        safe_fields = {'creado_en', '-creado_en', 'username', '-username'}
-        if ordering not in safe_fields:
-            ordering = '-creado_en'
+        ordering_param = params.get('ordering', '-timestamp')
+        safe = {'-timestamp', 'timestamp', '-usuario_nombre', 'usuario_nombre'}
+        ordering = ordering_param if ordering_param in safe else '-timestamp'
         qs = qs.order_by(ordering)
 
         return qs

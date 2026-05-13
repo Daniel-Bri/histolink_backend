@@ -1,35 +1,58 @@
 # CU20 - Panel de Auditoría
+# Lee desde Auditoria.RegistroAuditoria (el modelo real que registra eventos)
 
 from rest_framework import serializers
-from .models import RegistroAuditoria
+from SeguridadAvanzadaYAdministracion.Auditoria.models import RegistroAuditoria
 
-METODO_TO_ACCION = {
-    'POST':   'CREAR',
-    'PUT':    'ACTUALIZAR',
-    'PATCH':  'ACTUALIZAR',
-    'DELETE': 'ELIMINAR',
+_ACCION_MAP = {
+    'CREATE':    'CREAR',
+    'UPDATE':    'ACTUALIZAR',
+    'DELETE':    'ELIMINAR',
+    'FIRMAR':    'ACTUALIZAR',
+    'COMPLETAR': 'ACTUALIZAR',
+    'DISPENSAR': 'ACTUALIZAR',
+    'ANULAR':    'ELIMINAR',
+    'LOGIN':     'LOGIN',
+    'LOGOUT':    'LOGOUT',
 }
 
-# Orden importa: más específico primero
 _PATH_MODULO = [
-    ('/api/pacientes',       'PACIENTES'),
-    ('/api/auth/login',      'USUARIOS'),
-    ('/api/auth/logout',     'USUARIOS'),
-    ('/api/auth',            'USUARIOS'),
-    ('/api/personal',        'USUARIOS'),
-    ('/api/triaje',          'ATENCION_CLINICA'),
-    ('/api/consultas',       'ATENCION_CLINICA'),
-    ('/api/clinica',         'ATENCION_CLINICA'),
-    ('/api/ordenes',         'ATENCION_CLINICA'),
-    ('/api/fichas',          'APERTURA_FICHA'),
-    ('/api/reportes',        'REPORTES'),
-    ('/api/auditoria',       'REPORTES'),
-    ('/api/admin/backup',    'CONFIGURACION'),
-    ('/api/tenants',         'CONFIGURACION'),
+    ('/api/pacientes',    'PACIENTES'),
+    ('/api/auth/login',  'USUARIOS'),
+    ('/api/auth/logout', 'USUARIOS'),
+    ('/api/auth',        'USUARIOS'),
+    ('/api/personal',    'USUARIOS'),
+    ('/api/triaje',      'ATENCION_CLINICA'),
+    ('/api/consultas',   'ATENCION_CLINICA'),
+    ('/api/clinica',     'ATENCION_CLINICA'),
+    ('/api/ordenes',     'ATENCION_CLINICA'),
+    ('/api/fichas',      'APERTURA_FICHA'),
+    ('/api/reportes',    'REPORTES'),
+    ('/api/auditoria',   'REPORTES'),
+    ('/api/admin',       'CONFIGURACION'),
+    ('/api/tenants',     'CONFIGURACION'),
 ]
 
+_MODELO_MODULO = {
+    'Paciente':      'PACIENTES',
+    'User':          'USUARIOS',
+    'PersonalSalud': 'USUARIOS',
+    'Ficha':         'APERTURA_FICHA',
+    'Triaje':        'ATENCION_CLINICA',
+    'Consulta':      'ATENCION_CLINICA',
+    'RecetaMedica':  'ATENCION_CLINICA',
+    'OrdenEstudio':  'ATENCION_CLINICA',
+    'Antecedente':   'PACIENTES',
+}
 
-def _path_to_modulo(path: str) -> str:
+
+def _derive_modulo(obj) -> str:
+    # Primero por modelo Django
+    m = _MODELO_MODULO.get(obj.modelo)
+    if m:
+        return m
+    # Luego por endpoint URL
+    path = obj.endpoint or ''
     for prefix, modulo in _PATH_MODULO:
         if path.startswith(prefix):
             return modulo
@@ -37,21 +60,27 @@ def _path_to_modulo(path: str) -> str:
 
 
 class RegistroAuditoriaSerializer(serializers.ModelSerializer):
-    timestamp       = serializers.DateTimeField(source='creado_en')
-    usuario_username = serializers.CharField(source='username')
-    accion          = serializers.SerializerMethodField()
-    modulo          = serializers.SerializerMethodField()
-    detalles        = serializers.SerializerMethodField()
+    timestamp        = serializers.DateTimeField()
+    usuario_username = serializers.CharField(source='usuario_nombre')
+    accion           = serializers.SerializerMethodField()
+    modulo           = serializers.SerializerMethodField()
+    ip_address       = serializers.CharField(source='ip_origen', allow_null=True)
+    detalles         = serializers.SerializerMethodField()
 
     class Meta:
         model  = RegistroAuditoria
         fields = ['id', 'timestamp', 'usuario_username', 'accion', 'modulo', 'ip_address', 'detalles']
 
     def get_accion(self, obj):
-        return METODO_TO_ACCION.get(obj.metodo, obj.metodo)
+        return _ACCION_MAP.get(obj.accion, obj.accion)
 
     def get_modulo(self, obj):
-        return _path_to_modulo(obj.path)
+        return _derive_modulo(obj)
 
     def get_detalles(self, obj):
-        return f"{obj.metodo} {obj.path} [{obj.status_code}]"
+        partes = [obj.accion, obj.modelo]
+        if obj.objeto_repr:
+            partes.append(f'"{obj.objeto_repr}"')
+        if obj.endpoint:
+            partes.append(f'[{obj.endpoint}]')
+        return ' '.join(partes)
