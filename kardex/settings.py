@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    "anymail",
     # ── Multitenant ───────────────────────────────────────────────────
     "Tenants",
     # ── GestionDeUsuarios ─────────────────────────────────────────────
@@ -135,7 +134,7 @@ DATABASES = {
         # Prioriza DB_* (definidas en .env) y mantiene fallback a PG* por compatibilidad.
         "NAME": config("DB_NAME", default=os.environ.get("PGDATABASE", "histolink")),
         "USER": config("DB_USER", default=os.environ.get("PGUSER", "postgres")),
-        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("alejandra", "")),
+        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("PGPASSWORD", "12345678")),
         "HOST": config("DB_HOST", default=os.environ.get("PGHOST", "localhost")),
         "PORT": config("DB_PORT", default=os.environ.get("PGPORT", "5432")),
     }
