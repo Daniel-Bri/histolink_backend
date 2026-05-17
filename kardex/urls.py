@@ -56,6 +56,9 @@ urlpatterns = [
 
     # SeguridadAvanzadaYAdministracion — Backup / Restore / Gestiones Anuales
     path("api/admin/backup/", include("SeguridadAvanzadaYAdministracion.BackupRestore.urls")),
+
+    # SeguridadAvanzadaYAdministracion — CU16: Break-Glass Solicitud
+    path("api/seguridad/break-glass/", include("SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud.urls")),
 ]
 
 if settings.DEBUG:
