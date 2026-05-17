@@ -134,7 +134,7 @@ DATABASES = {
         # Prioriza DB_* (definidas en .env) y mantiene fallback a PG* por compatibilidad.
         "NAME": config("DB_NAME", default=os.environ.get("PGDATABASE", "histolink")),
         "USER": config("DB_USER", default=os.environ.get("PGUSER", "postgres")),
-        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("PGPASSWORD", "12345678")),
+        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("alejandra", "")),
         "HOST": config("DB_HOST", default=os.environ.get("PGHOST", "localhost")),
         "PORT": config("DB_PORT", default=os.environ.get("PGPORT", "5432")),
     }
