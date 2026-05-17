@@ -18,12 +18,11 @@ class PasswordResetToken(models.Model):
 
     @classmethod
     def create_for_user(cls, user):
-        cls.objects.filter(user=user, used=False).delete()
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         return cls.objects.create(
             user=user,
             code=code,
-            expires_at=timezone.now() + timedelta(minutes=15),
+            expires_at=timezone.now() + timedelta(minutes=30),
         )
 
     def is_valid(self):

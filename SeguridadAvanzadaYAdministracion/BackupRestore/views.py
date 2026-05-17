@@ -154,12 +154,16 @@ class BackupCompletoView(APIView):
 class RestoreView(APIView):
     """
     POST /api/admin/backup/restore/
-    Recibe un archivo JSON y ejecuta Django loaddata. Solo superadmin.
+    Recibe un archivo JSON y ejecuta Django loaddata.
+    Accesible por Director, Administrativo y superadmin.
     """
-    permission_classes = (IsAdminUser,)
+    permission_classes = (IsAuthenticated,)
     parser_classes     = (MultiPartParser,)
 
     def post(self, request):
+        if not _tiene_rol_gestion(request.user):
+            return Response({"detail": "Sin permisos para restaurar."}, status=403)
+
         archivo = request.FILES.get('archivo')
         if not archivo:
             return Response({"detail": "Se requiere el campo 'archivo' (JSON)."}, status=400)

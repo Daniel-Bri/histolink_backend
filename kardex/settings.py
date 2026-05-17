@@ -134,7 +134,7 @@ DATABASES = {
         # Prioriza DB_* (definidas en .env) y mantiene fallback a PG* por compatibilidad.
         "NAME": config("DB_NAME", default=os.environ.get("PGDATABASE", "histolink")),
         "USER": config("DB_USER", default=os.environ.get("PGUSER", "postgres")),
-        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("alejandra", "")),
+        "PASSWORD": config("DB_PASSWORD", default=os.environ.get("PGPASSWORD", "12345678")),
         "HOST": config("DB_HOST", default=os.environ.get("PGHOST", "localhost")),
         "PORT": config("DB_PORT", default=os.environ.get("PGPORT", "5432")),
     }
@@ -288,16 +288,18 @@ CORS_ALLOW_ALL_ORIGINS = _env_bool(
     default=True,
 )
 
-# ── Email / SMTP (Gmail) ─────────────────────────────────────────────────
-# Configura EMAIL_HOST_USER y EMAIL_HOST_PASSWORD en el archivo .env
-# Para Gmail: genera una "Contraseña de aplicación" en myaccount.google.com
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True', cast=lambda v: v.strip().lower() in ('true', '1', 'yes'))
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+# ── Email — SendGrid HTTP API (Railway bloquea SMTP saliente) ────────────
+# En producción (Railway): EMAIL_BACKEND=anymail.backends.sendgrid.EmailBackend
+# En desarrollo local: EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend',
+)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Histolink <no-reply@histolink.com>')
+
+ANYMAIL = {
+    'BREVO_API_KEY': config('BREVO_API_KEY', default=''),
+}
 
 # Simple JWT configurations for secure, long-lived tokens
 from datetime import timedelta

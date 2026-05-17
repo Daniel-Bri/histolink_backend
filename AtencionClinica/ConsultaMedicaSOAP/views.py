@@ -35,6 +35,9 @@ class ConsultaViewSet(viewsets.ModelViewSet):
 
     def _apply_filters(self, qs):
         params = self.request.query_params
+        ficha_id = params.get('ficha')
+        if ficha_id:
+            qs = qs.filter(ficha_id=ficha_id)
         paciente_id = params.get('paciente')
         if paciente_id:
             qs = qs.filter(ficha__paciente_id=paciente_id)

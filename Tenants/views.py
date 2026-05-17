@@ -12,6 +12,64 @@ from .serializers import (
 )
 
 
+class UsuariosPorClinicaView(APIView):
+    """
+    GET /api/tenants/usuarios/
+    Retorna todos los usuarios (PersonalSalud) agrupados por clínica/tenant.
+    Solo superadmin (is_staff).
+    """
+    permission_classes = (IsAdminUser,)
+
+    def get(self, request):
+        from GestionDeUsuarios.GestionDePersonalDeSalud.models import PersonalSalud
+
+        personal_qs = (
+            PersonalSalud.objects
+            .select_related('user', 'especialidad', 'tenant')
+            .order_by('tenant__nombre', 'rol', 'user__last_name')
+        )
+
+        # Agrupar por tenant
+        clinicas: dict = {}
+        sin_clinica = []
+
+        for ps in personal_qs:
+            entrada = {
+                'id':           ps.id,
+                'user_id':      ps.user.id,
+                'username':     ps.user.username,
+                'nombre':       f"{ps.user.first_name} {ps.user.last_name}".strip() or ps.user.username,
+                'email':        ps.user.email,
+                'rol':          ps.rol,
+                'especialidad': ps.especialidad.nombre if ps.especialidad else None,
+                'item_min_salud': ps.item_min_salud,
+                'activo':       ps.is_active,
+            }
+            if ps.tenant:
+                tid = ps.tenant.id
+                if tid not in clinicas:
+                    clinicas[tid] = {
+                        'tenant_id':     ps.tenant.id,
+                        'tenant_nombre': ps.tenant.nombre,
+                        'tenant_activo': ps.tenant.activo,
+                        'usuarios':      [],
+                    }
+                clinicas[tid]['usuarios'].append(entrada)
+            else:
+                sin_clinica.append(entrada)
+
+        resultado = list(clinicas.values())
+        if sin_clinica:
+            resultado.append({
+                'tenant_id':     None,
+                'tenant_nombre': 'Sin clínica asignada',
+                'tenant_activo': None,
+                'usuarios':      sin_clinica,
+            })
+
+        return Response(resultado)
+
+
 class TenantListCreateView(generics.ListCreateAPIView):
     """GET /api/tenants/ — lista todos los establecimientos (solo superadmin)."""
     serializer_class   = TenantSerializer

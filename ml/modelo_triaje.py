@@ -391,7 +391,7 @@ class ModeloTriaje:
         return instancia
 
 
-# ── Datos sintéticos para entrenamiento ─────────────────────────────────
+# ── Dataset ─────────────────────────────────
 
 EJEMPLOS_TRIAJE = {
     1: [  # ROJO — Emergencia inmediata
