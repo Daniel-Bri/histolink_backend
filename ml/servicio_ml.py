@@ -26,8 +26,18 @@ Uso desde una vista Django:
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional
+from ml.modelo_triaje import preprocesar_texto, ModeloTriaje
+from ml.modelo_riesgo import ModeloRiesgoClinico
+
+# Parche para error de deserialización joblib (__main__)
+# Cuando los modelos se entrenan como script directo, joblib busca la clase en __main__.
+import __main__
+__main__.ModeloRiesgoClinico = ModeloRiesgoClinico
+__main__.ModeloTriaje = ModeloTriaje
+__main__.preprocesar_texto = preprocesar_texto
 
 logger = logging.getLogger("ml.servicio")
 
@@ -66,11 +76,30 @@ class ServicioML:
 
     def _cargar_modelos(self):
         """Carga todos los modelos al iniciar. Llamado desde AppConfig.ready()."""
+        print(f"\n{'='*60}")
+        print("DIAGNÓSTICO DE CARGA DE MODELOS ML")
+        print(f"{'='*60}")
+        
+        # 1. Ruta absoluta exacta
+        abs_models_dir = os.path.abspath(MODELS_DIR)
+        print(f"Ruta absoluta configurada: {abs_models_dir}")
+        
+        # 2. Listar archivos existentes
+        if os.path.exists(abs_models_dir):
+            archivos = os.listdir(abs_models_dir)
+            print(f"Archivos encontrados en la carpeta ({len(archivos)}):")
+            for f in archivos:
+                print(f"  - {f}")
+        else:
+            print(f"ERROR: La carpeta de modelos no existe: {abs_models_dir}")
+
+        print(f"{'-'*60}")
         logger.info("Iniciando carga de modelos ML...")
 
         # Modelo de triaje
         try:
             from ml.modelo_triaje import ModeloTriaje
+            print(f"Intentando cargar Triaje desde: {RUTA_MODELO_TRIAJE}")
             if RUTA_MODELO_TRIAJE.exists():
                 self._modelo_triaje = ModeloTriaje.cargar(str(RUTA_MODELO_TRIAJE))
                 logger.info(f"✓ Modelo triaje cargado: {RUTA_MODELO_TRIAJE}")
@@ -86,15 +115,19 @@ class ServicioML:
         try:
             from ml.modelo_riesgo import ModeloRiesgoClinico
             for tipo, ruta in RUTAS_MODELOS_RIESGO.items():
+                print(f"Buscando modelo '{tipo}': {ruta}")
                 if ruta.exists():
                     self._modelos_riesgo[tipo] = ModeloRiesgoClinico.cargar(str(ruta))
                     logger.info(f"✓ Modelo riesgo '{tipo}' cargado")
+                    print(f"  -> ✓ ÉXITO: {tipo} cargado")
                 else:
                     logger.warning(f"Modelo riesgo '{tipo}' no encontrado en {ruta}")
+                    print(f"  -> ✗ FALLO: Archivo no encontrado")
         except Exception as e:
             logger.error(f"Error cargando modelos de riesgo: {e}")
 
         self._cargado = True
+        print(f"{'='*60}\n")
         logger.info("Carga de modelos ML completada.")
 
     # ── Clasificación de Triaje ─────────────────────────────────────────
@@ -177,26 +210,26 @@ class ServicioML:
                         tipo_riesgo: str = "diabetes_tipo2") -> dict:
         """
         Predice el riesgo clínico de un paciente a partir de sus datos en BD.
-
-        Args:
-            paciente_id: ID del registro Paciente en PostgreSQL.
-            tipo_riesgo: tipo de riesgo a evaluar (ver TIPOS_RIESGO en modelo_riesgo.py).
-
-        Returns:
-            dict con la predicción completa de riesgo.
         """
         modelo = self._modelos_riesgo.get(tipo_riesgo)
         if modelo is None:
+            logger.warning(f"Modelo {tipo_riesgo} no disponible.")
             return {
-                "error": f"Modelo de riesgo '{tipo_riesgo}' no disponible.",
-                "probabilidad_riesgo": None,
+                "probabilidad": 0.0,
                 "clasificacion": "NO_DISPONIBLE",
+                "nivel_alerta": "INDEFINIDO",
+                "recomendacion": f"El modelo '{tipo_riesgo}' no ha sido entrenado o no está disponible."
             }
 
         try:
             datos = self._extraer_features_paciente(paciente_id)
             if datos is None:
-                return {"error": f"Paciente {paciente_id} no encontrado o sin datos suficientes."}
+                return {
+                    "probabilidad": 0.0,
+                    "clasificacion": "SIN_DATOS",
+                    "nivel_alerta": "ADVERTENCIA",
+                    "recomendacion": "El paciente no tiene datos clínicos (Triaje) suficientes para el análisis."
+                }
 
             return modelo.predecir(datos)
 

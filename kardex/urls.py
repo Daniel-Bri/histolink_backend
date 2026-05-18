@@ -56,6 +56,9 @@ urlpatterns = [
 
     # SeguridadAvanzadaYAdministracion — Backup / Restore / Gestiones Anuales
     path("api/admin/backup/", include("SeguridadAvanzadaYAdministracion.BackupRestore.urls")),
+
+    # IA_Blockchain — CU13: Predicción de Riesgos Clínicos (T004)
+    path("api/ia/", include("IA_Blockchain.PrediccionDeRiesgosClinicos.urls")),
 ]
 
 if settings.DEBUG:
