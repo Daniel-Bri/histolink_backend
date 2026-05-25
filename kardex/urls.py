@@ -56,6 +56,9 @@ urlpatterns = [
 
     # SeguridadAvanzadaYAdministracion — Backup / Restore / Gestiones Anuales
     path("api/admin/backup/", include("SeguridadAvanzadaYAdministracion.BackupRestore.urls")),
+
+    # IA_Blockchain — CU16: Configuración de Consentimiento (T09)
+    path("api/consentimientos/", include("IA_Blockchain.ConfiguracionDeConsentimiento.urls")),
 ]
 
 if settings.DEBUG:
