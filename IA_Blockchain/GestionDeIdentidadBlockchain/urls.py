@@ -7,4 +7,5 @@ urlpatterns = [
     path('verificar-cadena/', views.verificar_cadena),
     path('verificar-rol/<int:usuario_id>/', views.verificar_rol),
     path('eventos/', views.listar_eventos),
+    path('personal/', views.listar_personal_con_identidad),
 ]
