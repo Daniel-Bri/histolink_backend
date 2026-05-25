@@ -143,3 +143,43 @@ def listar_eventos(request):
     } for e in eventos]
 
     return Response(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, EsAdminODirector])
+def listar_personal_con_identidad(request):
+    """
+    GET /api/blockchain/personal/
+    Lista el personal de salud con su estado de identidad blockchain.
+    """
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    usuarios = User.objects.filter(
+        is_active=True
+    ).prefetch_related('groups', 'identidad_blockchain')
+
+    data = []
+    for u in usuarios:
+        if not u.groups.exists():
+            continue
+        try:
+            identidad = u.identidad_blockchain
+            clave_corta = identidad.clave_publica_pem[27:39] + '...' + identidad.clave_publica_pem[-6:-1]
+            estado = 'INMUTABLE'
+            did = identidad.did_simulado
+        except Exception:
+            clave_corta = 'Sin registrar'
+            estado = 'PENDIENTE'
+            did = None
+
+        data.append({
+            'id': u.id,
+            'nombre_completo': f"{u.first_name} {u.last_name}".strip() or u.username,
+            'username': u.username,
+            'rol': u.groups.first().name if u.groups.exists() else 'Sin rol',
+            'did': did,
+            'clave_publica_corta': clave_corta,
+            'estado_ledger': estado,
+        })
+
+    return Response(data)
