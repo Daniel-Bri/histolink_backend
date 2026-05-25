@@ -27,6 +27,7 @@ class EventoBlockchain(models.Model):
     firmado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='eventos_blockchain')
     timestamp = models.DateTimeField(auto_now_add=True)
     bloque_hash = models.CharField(max_length=64)
+    timestamp_bloque = models.CharField(max_length=50, blank=True, default='')
 
     class Meta:
         default_permissions = ('add', 'view')

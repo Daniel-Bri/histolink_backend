@@ -56,6 +56,9 @@ urlpatterns = [
 
     # SeguridadAvanzadaYAdministracion — Backup / Restore / Gestiones Anuales
     path("api/admin/backup/", include("SeguridadAvanzadaYAdministracion.BackupRestore.urls")),
+
+    # GestionDeIdentidadBlockchain — CU14: Gestión de Identidad Blockchain
+    path('api/blockchain/', include('IA_Blockchain.GestionDeIdentidadBlockchain.urls')),
 ]
 
 if settings.DEBUG:
