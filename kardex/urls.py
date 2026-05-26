@@ -63,6 +63,8 @@ urlpatterns = [
     path("api/ia/", include("IA_Blockchain.PrediccionDeRiesgosClinicos.urls")),
     # GestionDeIdentidadBlockchain — CU14: Gestión de Identidad Blockchain
     path('api/blockchain/', include('IA_Blockchain.GestionDeIdentidadBlockchain.urls')),
+    # SeguridadAvanzadaYAdministracion — CU16: Break-Glass Solicitud
+    path("api/seguridad/break-glass/", include("SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud.urls")),
 ]
 
 if settings.DEBUG:

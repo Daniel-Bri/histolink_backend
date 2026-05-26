@@ -1,7 +1,15 @@
 from django.urls import path
 
+from .views import (
+    BreakGlassMisSolicitudesView,
+    BreakGlassPendientesView,
+    BreakGlassSolicitarView,
+)
+
 app_name = "BreakGlass_Solicitud"
 
 urlpatterns = [
-    # Endpoints de CU17 - Protocolo Break-Glass: Solicitud de Emergencia — pendientes de implementación.
+    path("solicitar/", BreakGlassSolicitarView.as_view(), name="breakglass-solicitar"),
+    path("mis-solicitudes/", BreakGlassMisSolicitudesView.as_view(), name="breakglass-mis-solicitudes"),
+    path("pendientes/", BreakGlassPendientesView.as_view(), name="breakglass-pendientes"),
 ]
