@@ -61,6 +61,8 @@ urlpatterns = [
     path("api/consentimientos/", include("IA_Blockchain.ConfiguracionDeConsentimiento.urls")),
     # IA_Blockchain — CU13: Predicción de Riesgos Clínicos (T004)
     path("api/ia/", include("IA_Blockchain.PrediccionDeRiesgosClinicos.urls")),
+    # GestionDeIdentidadBlockchain — CU14: Gestión de Identidad Blockchain
+    path('api/blockchain/', include('IA_Blockchain.GestionDeIdentidadBlockchain.urls')),
 ]
 
 if settings.DEBUG:

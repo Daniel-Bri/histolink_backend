@@ -1,7 +1,11 @@
 from django.urls import path
-
-app_name = "GestionDeIdentidadBlockchain"
+from . import views
 
 urlpatterns = [
-    # Endpoints de CU14 - Gestión de Identidad Blockchain — pendientes de implementación.
+    path('identidad/', views.obtener_identidad),
+    path('identidad/registrar/', views.registrar_identidad),
+    path('verificar-cadena/', views.verificar_cadena),
+    path('verificar-rol/<int:usuario_id>/', views.verificar_rol),
+    path('eventos/', views.listar_eventos),
+    path('personal/', views.listar_personal_con_identidad),
 ]
