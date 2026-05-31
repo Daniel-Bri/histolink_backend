@@ -1,18 +1,28 @@
 # CU8 - Consulta Médica SOAP
-import hashlib
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from AtencionClinica.FirmaDigitalDeConsulta.views import calcular_hash_consulta
 from GestionDeUsuarios.LoginYAutenticacion.permissions import EsMedico
+from IA_Blockchain.GestionDeIdentidadBlockchain.models import IdentidadBlockchain
+from IA_Blockchain.GestionDeIdentidadBlockchain.service import agregar_evento_blockchain
 from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
 from .models import Consulta
 from .permissions import PuedeModificarConsulta
 from .serializers import ConsultaSerializer
 
 
+class ConsultaPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
 class ConsultaViewSet(viewsets.ModelViewSet):
+    pagination_class = ConsultaPagination
     serializer_class = ConsultaSerializer
 
     def get_queryset(self):
@@ -93,10 +103,22 @@ class ConsultaViewSet(viewsets.ModelViewSet):
             )
         consulta.estado = 'COMPLETADA'
         consulta.save(update_fields=['estado', 'actualizado_en'])
-        
+
+        # Cerrar la ficha asociada para que salga de la cola de atención.
+        # Usamos update() directo para evitar el modelo validar la transición
+        # (puede estar en ABIERTA si se saltó el triaje) — CERRADA es terminal y seguro.
+        ficha = consulta.ficha
+        if ficha.estado not in ('CERRADA', 'CANCELADA'):
+            from django.utils import timezone as _tz
+            from AtencionClinica.AperturaFichaYColaDeAtencion.models import Ficha as _Ficha
+            _Ficha.objects.filter(pk=ficha.pk).update(
+                estado='CERRADA',
+                fecha_cierre=_tz.now(),
+            )
+
         # Auditoría manual para acción clínica
         registrar_evento('COMPLETAR', consulta, request=request)
-        
+
         return Response(ConsultaSerializer(consulta, context={'request': request}).data)
 
     @action(detail=True, methods=['patch'])
@@ -110,18 +132,8 @@ class ConsultaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Generar SHA-256 del contenido de la consulta
-        contenido = (
-            f"{consulta.id}"
-            f"{consulta.motivo_consulta}"
-            f"{consulta.historia_enfermedad_actual}"
-            f"{consulta.examen_fisico}"
-            f"{consulta.impresion_diagnostica}"
-            f"{consulta.codigo_cie10_principal}"
-            f"{consulta.plan_tratamiento}"
-            f"{consulta.creado_en.isoformat()}"
-        )
-        hash_sha256 = hashlib.sha256(contenido.encode('utf-8')).hexdigest()
+        # Generar SHA-256 usando la misma función que usa la verificación (CU14)
+        hash_sha256 = calcular_hash_consulta(consulta)
 
         # Transición COMPLETADA → FIRMADA
         consulta.estado = 'FIRMADA'
@@ -131,5 +143,22 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         consulta.save(update_fields=[
             'estado', 'hash_documento', 'firmada_por', 'firmada_en', 'actualizado_en'
         ])
+
+        # Anclar en blockchain si el médico tiene identidad registrada
+        try:
+            identidad = IdentidadBlockchain.objects.get(
+                usuario=request.user, tenant=request.tenant
+            )
+            agregar_evento_blockchain(
+                tenant=request.tenant,
+                tipo_evento='FIRMA_CONSULTA',
+                documento_tipo='Consulta',
+                documento_id=consulta.id,
+                hash_documento=hash_sha256,
+                firmado_por=request.user,
+                clave_privada_pem=identidad.clave_privada_pem,
+            )
+        except IdentidadBlockchain.DoesNotExist:
+            pass  # Sin identidad blockchain — firma válida pero sin anclar en cadena
 
         return Response(ConsultaSerializer(consulta, context={'request': request}).data)

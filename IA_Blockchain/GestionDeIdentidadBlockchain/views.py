@@ -47,7 +47,19 @@ def registrar_identidad(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    identidad = registrar_identidad_blockchain(usuario, request.tenant)
+    tenant = request.tenant
+    if tenant is None:
+        # Superadmin sin tenant en JWT → inferir desde el perfil del médico
+        from GestionDeUsuarios.GestionDePersonalDeSalud.models import PersonalSalud
+        try:
+            tenant = PersonalSalud.objects.get(user=usuario).tenant
+        except PersonalSalud.DoesNotExist:
+            return Response(
+                {'error': 'El usuario no tiene perfil de personal de salud. No se puede determinar el tenant.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    identidad = registrar_identidad_blockchain(usuario, tenant)
 
     return Response({
         'mensaje': 'Identidad blockchain registrada exitosamente.',
