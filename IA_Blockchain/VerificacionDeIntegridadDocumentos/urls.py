@@ -1,7 +1,8 @@
 from django.urls import path
+from . import views
 
 app_name = "VerificacionDeIntegridadDocumentos"
 
 urlpatterns = [
-    # Endpoints de CU15 - Verificación de Integridad de Documentos — pendientes de implementación.
+    path('documento/<int:documento_id>/verificar/', views.verificar_documento, name='verificar-documento'),
 ]

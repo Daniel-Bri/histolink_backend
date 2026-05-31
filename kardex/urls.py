@@ -63,6 +63,10 @@ urlpatterns = [
     path("api/ia/", include("IA_Blockchain.PrediccionDeRiesgosClinicos.urls")),
     # GestionDeIdentidadBlockchain — CU14: Gestión de Identidad Blockchain
     path('api/blockchain/', include('IA_Blockchain.GestionDeIdentidadBlockchain.urls')),
+    # VerificacionDeIntegridadDocumentos — CU15: T007 verificar hash vs blockchain
+    path('api/blockchain/', include('IA_Blockchain.VerificacionDeIntegridadDocumentos.urls')),
+    # FirmaDigitalDeConsulta — CU11: T008 firmar consulta con SHA-256 + RSA
+    path('api/', include('AtencionClinica.FirmaDigitalDeConsulta.urls')),
     # SeguridadAvanzadaYAdministracion — CU16: Break-Glass Solicitud
     path("api/seguridad/break-glass/", include("SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud.urls")),
 ]

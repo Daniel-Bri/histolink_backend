@@ -20,7 +20,7 @@ class PacientePagination(PageNumberPagination):
 class PacienteViewSet(viewsets.ModelViewSet):
     serializer_class = PacienteSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['ci', 'apellido_paterno', 'apellido_materno']
+    search_fields = ['ci', 'nombres', 'apellido_paterno', 'apellido_materno']
     pagination_class = PacientePagination
 
     def get_queryset(self):

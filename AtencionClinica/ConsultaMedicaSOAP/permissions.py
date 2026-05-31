@@ -11,4 +11,7 @@ class PuedeModificarConsulta(BasePermission):
             return False
         if obj.medico_id != request.user.id:
             return False
+        accion = getattr(view, 'action', None)
+        if accion == 'firmar':
+            return obj.estado == 'COMPLETADA'
         return obj.estado == 'BORRADOR'
