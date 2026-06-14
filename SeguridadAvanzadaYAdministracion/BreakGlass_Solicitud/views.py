@@ -113,6 +113,7 @@ class BreakGlassPendientesView(APIView):
     def get(self, request):
         if not _es_auditor_director_admin(request.user):
             return Response({"detail": "No tiene permisos para ver solicitudes pendientes."}, status=status.HTTP_403_FORBIDDEN)
+        BreakGlassSolicitud.expirar_vencidas()
         qs = BreakGlassSolicitud.objects.filter(estado=BreakGlassSolicitud.Estado.PENDIENTE).select_related(
             "paciente", "solicitante"
         )

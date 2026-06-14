@@ -37,6 +37,7 @@ class BreakGlassSolicitudCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        BreakGlassSolicitud.expirar_vencidas()
         paciente = attrs["paciente"]
         request = self.context.get("request")
         tenant = getattr(request, "tenant", None) if request else None

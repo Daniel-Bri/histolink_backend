@@ -3,6 +3,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import OperationalError, ProgrammingError
 from django.db import models
 from Tenants.models import Tenant
 
@@ -95,7 +96,10 @@ class EventoBlockchain(models.Model):
             default=str,
         )
 
-        identidad = getattr(firmado_por, "identidad_blockchain", None)
+        try:
+            identidad = getattr(firmado_por, "identidad_blockchain", None)
+        except (IdentidadBlockchain.DoesNotExist, OperationalError, ProgrammingError):
+            identidad = None
         clave_privada_pem = getattr(identidad, "clave_privada_pem", None)
 
         return agregar_evento_blockchain(

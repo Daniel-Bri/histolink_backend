@@ -57,6 +57,17 @@ def _validar_autoria(solicitud: BreakGlassSolicitud, user) -> Response | None:
     return None
 
 
+def _expirar_si_corresponde(solicitud: BreakGlassSolicitud) -> bool:
+    if solicitud.estado == BreakGlassSolicitud.Estado.PENDIENTE and solicitud.acceso_expirado:
+        BreakGlassSolicitud.objects.filter(pk=solicitud.pk).update(
+            estado=BreakGlassSolicitud.Estado.EXPIRADA,
+            actualizado_en=timezone.now(),
+        )
+        solicitud.refresh_from_db()
+        return True
+    return False
+
+
 class BreakGlassAprobarView(APIView):
     permission_classes = [permissions.IsAuthenticated, EsAuditorODirector]
 
@@ -79,16 +90,16 @@ class BreakGlassAprobarView(APIView):
     def post(self, request, pk: int):
         solicitud = _obtener_solicitud(pk)
 
+        if _expirar_si_corresponde(solicitud):
+            return Response(
+                {"detail": "La solicitud ya expiró y fue marcada como EXPIRADA."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if solicitud.estado != BreakGlassSolicitud.Estado.PENDIENTE:
             return Response(
                 {"detail": f"La solicitud no puede aprobarse porque está en estado {solicitud.estado}."},
                 status=status.HTTP_409_CONFLICT,
-            )
-
-        if solicitud.acceso_expirado:
-            return Response(
-                {"detail": "La solicitud está expirada y no puede aprobarse."},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         denial = _validar_autoria(solicitud, request.user)
@@ -96,11 +107,8 @@ class BreakGlassAprobarView(APIView):
             return denial
 
         now = timezone.now()
-        acceso_desde = solicitud.acceso_desde or now
-        acceso_hasta = solicitud.acceso_hasta or (now + timedelta(hours=2))
-        if acceso_hasta <= now:
-            acceso_desde = now
-            acceso_hasta = now + timedelta(hours=2)
+        acceso_desde = now
+        acceso_hasta = now + timedelta(hours=2)
 
         with transaction.atomic():
             BreakGlassSolicitud.objects.filter(pk=solicitud.pk).update(
@@ -180,16 +188,16 @@ class BreakGlassRechazarView(APIView):
     def post(self, request, pk: int):
         solicitud = _obtener_solicitud(pk)
 
+        if _expirar_si_corresponde(solicitud):
+            return Response(
+                {"detail": "La solicitud ya expiró y fue marcada como EXPIRADA."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if solicitud.estado != BreakGlassSolicitud.Estado.PENDIENTE:
             return Response(
                 {"detail": f"La solicitud no puede rechazarse porque está en estado {solicitud.estado}."},
                 status=status.HTTP_409_CONFLICT,
-            )
-
-        if solicitud.acceso_expirado:
-            return Response(
-                {"detail": "La solicitud está expirada y no puede rechazarse."},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         denial = _validar_autoria(solicitud, request.user)
