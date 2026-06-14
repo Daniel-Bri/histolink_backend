@@ -39,6 +39,7 @@ class BreakGlassSolicitud(models.Model):
         related_name="break_glass_solicitudes",
     )
     justificacion = models.TextField()
+    motivo_rechazo = models.TextField(blank=True, null=True)
     nivel_urgencia = models.CharField(max_length=10, choices=NivelUrgencia.choices)
     estado = models.CharField(
         max_length=12,

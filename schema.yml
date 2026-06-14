@@ -1,0 +1,5776 @@
+openapi: 3.0.3
+info:
+  title: Histolink API
+  version: 1.0.0
+  description: Documentacion automatica de la API del sistema clinico Histolink.
+paths:
+  /api/admin/backup/completo/:
+    post:
+      operationId: api_admin_backup_completo_create
+      description: |-
+        POST /api/admin/backup/completo/
+        Ejecuta Django dumpdata y devuelve el archivo JSON. Solo superadmin.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/backup/exportar-tenant/:
+    post:
+      operationId: api_admin_backup_exportar_tenant_create
+      description: |-
+        POST /api/admin/backup/exportar-tenant/
+        Genera un archivo JSON con los datos clínicos del tenant del usuario autenticado.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/backup/gestiones/:
+    get:
+      operationId: api_admin_backup_gestiones_retrieve
+      description: |-
+        GET  /api/admin/backup/gestiones/          — lista gestiones del tenant
+        POST /api/admin/backup/gestiones/          — crea gestión
+        POST /api/admin/backup/gestiones/<pk>/congelar/    — congela
+        POST /api/admin/backup/gestiones/<pk>/descongelar/ — descongela
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_admin_backup_gestiones_create
+      description: |-
+        GET  /api/admin/backup/gestiones/          — lista gestiones del tenant
+        POST /api/admin/backup/gestiones/          — crea gestión
+        POST /api/admin/backup/gestiones/<pk>/congelar/    — congela
+        POST /api/admin/backup/gestiones/<pk>/descongelar/ — descongela
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/admin/backup/gestiones/{id}/congelar/:
+    post:
+      operationId: api_admin_backup_gestiones_congelar_create
+      description: |-
+        GET  /api/admin/backup/gestiones/          — lista gestiones del tenant
+        POST /api/admin/backup/gestiones/          — crea gestión
+        POST /api/admin/backup/gestiones/<pk>/congelar/    — congela
+        POST /api/admin/backup/gestiones/<pk>/descongelar/ — descongela
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/backup/gestiones/{id}/descongelar/:
+    post:
+      operationId: api_admin_backup_gestiones_descongelar_create
+      description: |-
+        GET  /api/admin/backup/gestiones/          — lista gestiones del tenant
+        POST /api/admin/backup/gestiones/          — crea gestión
+        POST /api/admin/backup/gestiones/<pk>/congelar/    — congela
+        POST /api/admin/backup/gestiones/<pk>/descongelar/ — descongela
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/backup/restore/:
+    post:
+      operationId: api_admin_backup_restore_create
+      description: |-
+        POST /api/admin/backup/restore/
+        Recibe un archivo JSON y ejecuta Django loaddata.
+        Accesible por Director, Administrativo y superadmin.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/antecedentes/{paciente_id}/antecedentes/:
+    get:
+      operationId: api_antecedentes_antecedentes_retrieve
+      description: |-
+        GET  /api/pacientes/{paciente_id}/antecedentes/
+            Devuelve el antecedente del paciente.
+            Respuesta cacheada en Redis DB1 durante 15 minutos.
+            Si el paciente no tiene antecedente aún, crea uno vacío.
+
+        PATCH /api/pacientes/{paciente_id}/antecedentes/
+            Actualización parcial del antecedente.
+            Solo se modifican los campos incluidos en el body.
+            Invalida la entrada de caché tras guardar.
+      parameters:
+      - in: path
+        name: paciente_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_antecedentes_antecedentes_partial_update
+      description: |-
+        GET  /api/pacientes/{paciente_id}/antecedentes/
+            Devuelve el antecedente del paciente.
+            Respuesta cacheada en Redis DB1 durante 15 minutos.
+            Si el paciente no tiene antecedente aún, crea uno vacío.
+
+        PATCH /api/pacientes/{paciente_id}/antecedentes/
+            Actualización parcial del antecedente.
+            Solo se modifican los campos incluidos en el body.
+            Invalida la entrada de caché tras guardar.
+      parameters:
+      - in: path
+        name: paciente_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auditoria/:
+    get:
+      operationId: api_auditoria_list
+      description: |-
+        GET /api/auditoria/
+        Filtros: ?usuario=&accion=&modulo=&fecha_desde=&fecha_hasta=&ordering=
+        Roles: Auditor, Director, Administrativo, superadmin.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRegistroAuditoriaList'
+          description: ''
+  /api/auth/change-password/:
+    put:
+      operationId: api_auth_change_password_update
+      description: |-
+        PUT /api/auth/change-password/
+
+        Cambia la contraseña del usuario autenticado.
+        Requiere Bearer token.
+
+        Body:
+            old_password, new_password, new_password_confirm
+
+        Response 200:
+            { message: "Contraseña actualizada exitosamente." }
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/forgot-password/:
+    post:
+      operationId: api_auth_forgot_password_create
+      description: |-
+        POST /api/auth/forgot-password/
+
+        Genera un código de 6 dígitos y lo envía al email del usuario.
+        La respuesta es siempre la misma (no revela si el email existe).
+
+        Body:
+            email (string)
+
+        Response 200:
+            { detail: "Si el correo..." }
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: api_auth_login_create
+      description: |-
+        POST /api/auth/login/
+
+        Autenticación con username + password.
+        Retorna access token, refresh token, y datos del usuario.
+
+        Body:
+            username, password
+
+        Response 200:
+            { access, refresh, user: { id, username, email, groups, ... } }
+
+        Response 429 (demasiados intentos fallidos desde esta IP):
+            { detail, retry_after }; cabecera Retry-After (segundos).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/auth/logout/:
+    post:
+      operationId: api_auth_logout_create
+      description: |-
+        POST /api/auth/logout/
+
+        Invalida el refresh token (lo agrega a token_blacklist_blacklistedtoken).
+        El access token sigue válido hasta su expiración natural (15 min).
+
+        Body:
+            refresh (string — el refresh token JWT)
+
+        Response 200:
+            { message: "Sesión cerrada exitosamente." }
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/profile/:
+    get:
+      operationId: api_auth_profile_retrieve
+      description: |-
+        GET /api/auth/profile/
+
+        Retorna el perfil del usuario autenticado.
+        Requiere Bearer token en el header Authorization.
+
+        Response 200:
+            { id, username, email, first_name, last_name, is_active,
+              is_staff, date_joined, last_login, groups: [...] }
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/register/:
+    post:
+      operationId: api_auth_register_create
+      description: |-
+        POST /api/auth/register/
+
+        Registra un nuevo usuario en auth_user.
+        No requiere autenticación (AllowAny).
+
+        Body:
+            username, email, password, password_confirm
+            first_name (optional), last_name (optional)
+
+        Response 201:
+            { message, user: { id, username, email, ... } }
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/auth/reset-password/:
+    post:
+      operationId: api_auth_reset_password_create
+      description: |-
+        POST /api/auth/reset-password/
+
+        Valida el código enviado por email y cambia la contraseña.
+
+        Body:
+            email, code (6 dígitos), new_password, new_password_confirm
+
+        Response 200:
+            { detail: "Contraseña actualizada exitosamente." }
+
+        Response 400:
+            { error: "Código inválido o expirado." }
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/token/:
+    post:
+      operationId: api_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/blacklist/:
+    post:
+      operationId: api_auth_token_blacklist_create
+      description: |-
+        Takes a token and blacklists it. Must be used with the
+        `rest_framework_simplejwt.token_blacklist` app installed.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/auth/token/refresh/:
+    post:
+      operationId: api_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/token/verify/:
+    post:
+      operationId: api_auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/documento/{documento_id}/verificar/:
+    get:
+      operationId: api_blockchain_documento_verificar_retrieve
+      description: |-
+        T007 — Verifica la integridad de una consulta médica contra blockchain.
+        Recalcula el SHA-256 del documento actual y lo compara con el hash
+        anclado en el bloque de firma. Devuelve VÁLIDO o ALTERADO.
+      parameters:
+      - in: path
+        name: documento_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/eventos/:
+    get:
+      operationId: api_blockchain_eventos_retrieve
+      description: |-
+        GET /api/blockchain/eventos/
+        Lista todos los eventos de la blockchain del tenant.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/identidad/:
+    get:
+      operationId: api_blockchain_identidad_retrieve
+      description: |-
+        GET /api/blockchain/identidad/
+        Devuelve la identidad blockchain del usuario autenticado.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/identidad/registrar/:
+    post:
+      operationId: api_blockchain_identidad_registrar_create
+      description: |-
+        POST /api/blockchain/identidad/registrar/
+        Genera claves RSA y DID para un usuario y lo registra en la blockchain.
+        Solo Admin puede hacerlo.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/personal/:
+    get:
+      operationId: api_blockchain_personal_retrieve
+      description: |-
+        GET /api/blockchain/personal/
+        Lista el personal de salud con su estado de identidad blockchain.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/verificar-cadena/:
+    get:
+      operationId: api_blockchain_verificar_cadena_retrieve
+      description: |-
+        GET /api/blockchain/verificar-cadena/
+        Verifica que toda la cadena de bloques esté íntegra.
+        Solo Admin puede hacerlo.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/blockchain/verificar-rol/{usuario_id}/:
+    get:
+      operationId: api_blockchain_verificar_rol_retrieve
+      description: |-
+        GET /api/blockchain/verificar-rol/{usuario_id}/
+        Contrasta el rol local del usuario con el registro en blockchain.
+        Si hay alteración, suspende la cuenta automáticamente.
+      parameters:
+      - in: path
+        name: usuario_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/clinica/recetas/:
+    get:
+      operationId: api_clinica_recetas_list
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Receta'
+          description: ''
+    post:
+      operationId: api_clinica_recetas_create
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+  /api/clinica/recetas/{id}/:
+    get:
+      operationId: api_clinica_recetas_retrieve
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+    put:
+      operationId: api_clinica_recetas_update
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecetaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+    patch:
+      operationId: api_clinica_recetas_partial_update
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+    delete:
+      operationId: api_clinica_recetas_destroy
+      description: ViewSet de Receta con acciones de dispensación y anulación.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/clinica/recetas/{id}/anular/:
+    patch:
+      operationId: api_clinica_recetas_anular_partial_update
+      description: |-
+        PATCH /api/clinica/recetas/{id}/anular/
+
+        Reglas:
+        - No se puede anular una receta DISPENSADA.
+        - Puede anular: médico creador, Admin/Director o superuser.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+  /api/clinica/recetas/{id}/dispensar/:
+    patch:
+      operationId: api_clinica_recetas_dispensar_partial_update
+      description: |-
+        PATCH /api/clinica/recetas/{id}/dispensar/ — solo rol Farmacia.
+
+        Marca la receta como DISPENSADA. La receta debe estar en estado EMITIDA;
+        si ya fue dispensada o anulada devuelve 400.
+        Registra dispensada_por y fecha_dispensacion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Receta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecetaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+          description: ''
+  /api/consentimientos/:
+    get:
+      operationId: api_consentimientos_list
+      description: API para el registro y consulta de consentimientos informados.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Consentimiento'
+          description: ''
+    post:
+      operationId: api_consentimientos_create
+      description: API para el registro y consulta de consentimientos informados.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+  /api/consentimientos/{id}/:
+    get:
+      operationId: api_consentimientos_retrieve
+      description: API para el registro y consulta de consentimientos informados.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consentimiento.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+    put:
+      operationId: api_consentimientos_update
+      description: API para el registro y consulta de consentimientos informados.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consentimiento.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+    patch:
+      operationId: api_consentimientos_partial_update
+      description: API para el registro y consulta de consentimientos informados.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consentimiento.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentimientoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+    delete:
+      operationId: api_consentimientos_destroy
+      description: API para el registro y consulta de consentimientos informados.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consentimiento.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/consentimientos/{id}/revocar/:
+    post:
+      operationId: api_consentimientos_revocar_create
+      description: Endpoint específico para la revocación de un consentimiento.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consentimiento.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentimientoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+  /api/consentimientos/exportar/:
+    get:
+      operationId: api_consentimientos_exportar_retrieve
+      description: Exporta el listado actual (respetando filtros) a un archivo CSV.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consentimiento'
+          description: ''
+  /api/consentimientos/tipos/:
+    get:
+      operationId: api_consentimientos_tipos_list
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TipoConsentimiento'
+          description: ''
+    post:
+      operationId: api_consentimientos_tipos_create
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoConsentimiento'
+          description: ''
+  /api/consentimientos/tipos/{id}/:
+    get:
+      operationId: api_consentimientos_tipos_retrieve
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tipo de Consentimiento.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoConsentimiento'
+          description: ''
+    put:
+      operationId: api_consentimientos_tipos_update
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tipo de Consentimiento.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TipoConsentimientoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoConsentimiento'
+          description: ''
+    patch:
+      operationId: api_consentimientos_tipos_partial_update
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tipo de Consentimiento.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTipoConsentimientoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTipoConsentimientoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTipoConsentimientoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoConsentimiento'
+          description: ''
+    delete:
+      operationId: api_consentimientos_tipos_destroy
+      description: |-
+        API para la configuración de tipos de consentimiento.
+        Solo accesible por Directores o Administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tipo de Consentimiento.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/consultas/{consulta_id}/firmar/:
+    patch:
+      operationId: api_consultas_firmar_partial_update
+      description: |-
+        T008 — Firma digital de una consulta médica.
+        Calcula SHA-256 del contenido SOAP, firma con RSA y ancla en blockchain.
+        Solo médicos con identidad blockchain registrada pueden firmar.
+      parameters:
+      - in: path
+        name: consulta_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/consultas/consultas/:
+    get:
+      operationId: api_consultas_consultas_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsultaList'
+          description: ''
+    post:
+      operationId: api_consultas_consultas_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+  /api/consultas/consultas/{id}/:
+    get:
+      operationId: api_consultas_consultas_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+    put:
+      operationId: api_consultas_consultas_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+    patch:
+      operationId: api_consultas_consultas_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+    delete:
+      operationId: api_consultas_consultas_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/consultas/consultas/{id}/completar/:
+    patch:
+      operationId: api_consultas_consultas_completar_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+  /api/consultas/consultas/{id}/firmar/:
+    patch:
+      operationId: api_consultas_consultas_firmar_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consulta.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+          description: ''
+  /api/emergencia/{id}/aprobar/:
+    post:
+      operationId: api_emergencia_aprobar_create
+      description: Permite a un Auditor o Director aprobar una solicitud Break-Glass
+        pendiente. Aplica anti-autoaprobacion, activa acceso temporal y registra auditoria/blockchain.
+      summary: Aprobar solicitud Break-Glass
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Break-Glass
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AprobarBreakGlassResponse'
+          description: ''
+        '400':
+          description: Solicitud expirada o datos invalidos.
+        '403':
+          description: Rol no autorizado o intento de autoaprobacion.
+        '404':
+          description: Solicitud Break-Glass no encontrada.
+        '409':
+          description: La solicitud ya no esta pendiente.
+  /api/emergencia/{id}/rechazar/:
+    post:
+      operationId: api_emergencia_rechazar_create
+      description: Permite a un Auditor o Director rechazar una solicitud Break-Glass
+        pendiente indicando un motivo. Registra auditoria, blockchain y notificacion
+        al solicitante.
+      summary: Rechazar solicitud Break-Glass
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Break-Glass
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RechazarBreakGlassResponse'
+          description: ''
+        '400':
+          description: Motivo de rechazo invalido o solicitud expirada.
+        '403':
+          description: Rol no autorizado o intento de autorevision.
+        '404':
+          description: Solicitud Break-Glass no encontrada.
+        '409':
+          description: La solicitud ya no esta pendiente.
+  /api/especialidades/:
+    get:
+      operationId: api_especialidades_list
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Especialidad'
+          description: ''
+    post:
+      operationId: api_especialidades_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Especialidad'
+          description: ''
+  /api/especialidades/{id}/:
+    get:
+      operationId: api_especialidades_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this especialidad.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Especialidad'
+          description: ''
+    put:
+      operationId: api_especialidades_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this especialidad.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EspecialidadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Especialidad'
+          description: ''
+    patch:
+      operationId: api_especialidades_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this especialidad.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEspecialidadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEspecialidadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEspecialidadRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Especialidad'
+          description: ''
+    delete:
+      operationId: api_especialidades_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this especialidad.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/expediente/{id}/expediente/:
+    get:
+      operationId: api_expediente_expediente_retrieve
+      description: |-
+        GET /api/pacientes/{id}/expediente/
+
+        Retorna el expediente clínico completo del paciente:
+        datos personales, antecedentes, triajes, consultas SOAP
+        (con sus recetas + detalles + órdenes de estudio + resultados).
+
+        Requiere autenticación JWT (Bearer token).
+
+        Response 200: { datos del paciente + antecedentes + triajes + consultas[] }
+        Response 404: { "error": "Paciente no encontrado." }
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/fichas/:
+    get:
+      operationId: api_fichas_list
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFichaList'
+          description: ''
+    post:
+      operationId: api_fichas_create
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ficha'
+          description: ''
+  /api/fichas/{id}/:
+    get:
+      operationId: api_fichas_retrieve
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Ficha.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ficha'
+          description: ''
+    put:
+      operationId: api_fichas_update
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Ficha.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FichaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ficha'
+          description: ''
+    patch:
+      operationId: api_fichas_partial_update
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Ficha.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ficha'
+          description: ''
+    delete:
+      operationId: api_fichas_destroy
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Ficha.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/fichas/{id}/cambiar-estado/:
+    patch:
+      operationId: api_fichas_cambiar_estado_partial_update
+      description: |-
+        ViewSet con CRUD sobre Ficha.
+
+        DELETE realiza borrado lógico (esta_activa=False).
+
+        Extra: PATCH `/api/fichas/{pk}/cambiar-estado/`
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Ficha.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFichaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ficha'
+          description: ''
+  /api/ia/riesgo/:
+    get:
+      operationId: api_ia_riesgo_retrieve
+      description: |-
+        T004: Endpoint para consulta de riesgos clínicos con IA.
+        Recibe paciente_id y tipo (opcional) por query params.
+        No persiste datos en base de datos para evitar dependencias de migración.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/ordenes-estudio/:
+    get:
+      operationId: api_ordenes_estudio_list
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrdenEstudioList'
+          description: ''
+    post:
+      operationId: api_ordenes_estudio_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioCreate'
+          description: ''
+  /api/ordenes-estudio/{id}/:
+    get:
+      operationId: api_ordenes_estudio_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Orden de Estudio.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioDetail'
+          description: ''
+    put:
+      operationId: api_ordenes_estudio_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Orden de Estudio.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioUpdateMedicoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioUpdateMedicoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrdenEstudioUpdateMedicoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioUpdateMedico'
+          description: ''
+    patch:
+      operationId: api_ordenes_estudio_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Orden de Estudio.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioUpdateMedicoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioUpdateMedicoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioUpdateMedicoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioUpdateMedico'
+          description: ''
+    delete:
+      operationId: api_ordenes_estudio_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Orden de Estudio.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ordenes-estudio/{id}/cambiar-estado/:
+    patch:
+      operationId: api_ordenes_estudio_cambiar_estado_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Orden de Estudio.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioCambiarEstadoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioCambiarEstadoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrdenEstudioCambiarEstadoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioCambiarEstado'
+          description: ''
+  /api/ordenes-estudio/cola-laboratorio/:
+    get:
+      operationId: api_ordenes_estudio_cola_laboratorio_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenEstudioDetail'
+          description: ''
+  /api/pacientes/pacientes/:
+    get:
+      operationId: api_pacientes_pacientes_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPacienteList'
+          description: ''
+    post:
+      operationId: api_pacientes_pacientes_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paciente'
+          description: ''
+  /api/pacientes/pacientes/{id}/:
+    get:
+      operationId: api_pacientes_pacientes_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Paciente.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paciente'
+          description: ''
+    put:
+      operationId: api_pacientes_pacientes_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Paciente.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PacienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paciente'
+          description: ''
+    patch:
+      operationId: api_pacientes_pacientes_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Paciente.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPacienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPacienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPacienteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paciente'
+          description: ''
+    delete:
+      operationId: api_pacientes_pacientes_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Paciente.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/personal/:
+    get:
+      operationId: api_personal_list
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PersonalSalud'
+          description: ''
+    post:
+      operationId: api_personal_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalSaludCreate'
+          description: ''
+  /api/personal/{id}/:
+    get:
+      operationId: api_personal_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this personal salud.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalSalud'
+          description: ''
+    put:
+      operationId: api_personal_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this personal salud.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalSaludUpdate'
+          description: ''
+    patch:
+      operationId: api_personal_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this personal salud.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalSaludUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalSaludUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalSaludUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalSaludUpdate'
+          description: ''
+    delete:
+      operationId: api_personal_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this personal salud.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/personal/{id}/reactivar/:
+    post:
+      operationId: api_personal_reactivar_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this personal salud.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PersonalSaludRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalSalud'
+          description: ''
+  /api/reportes/produccion/:
+    get:
+      operationId: api_reportes_produccion_retrieve
+      description: Genera reportes de produccion con filtros manuales o busqueda inteligente
+        por q. Puede devolver JSON o exportar el mismo reporte en CSV, Excel o PDF.
+      summary: Reporte de produccion
+      parameters:
+      - in: query
+        name: codigo_cie10
+        schema:
+          type: string
+        description: Codigo diagnostico CIE-10.
+      - in: query
+        name: fecha_desde
+        schema:
+          type: string
+          format: date
+        description: Fecha inicial YYYY-MM-DD.
+      - in: query
+        name: fecha_hasta
+        schema:
+          type: string
+          format: date
+        description: Fecha final YYYY-MM-DD.
+      - in: query
+        name: formato
+        schema:
+          type: string
+        description: json, csv, excel o pdf.
+      - in: query
+        name: medico_id
+        schema:
+          type: integer
+        description: ID del medico.
+      - in: query
+        name: medico_nombre
+        schema:
+          type: string
+        description: Nombre o apellido del medico.
+      - in: query
+        name: nivel_urgencia
+        schema:
+          type: string
+        description: 'Nivel de urgencia: ROJO, NARANJA, AMARILLO, VERDE o AZUL.'
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Texto libre interpretado por NLP.
+      - in: query
+        name: tipo_reporte
+        schema:
+          type: string
+        description: resumen_general, consultas, triajes, recetas_emitidas, recetas_dispensadas
+          o recetas_anuladas.
+      tags:
+      - Reportes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Reporte JSON o archivo exportado segun formato.
+        '400':
+          description: Filtros invalidos, por ejemplo fecha_desde mayor a fecha_hasta.
+        '401':
+          description: Token JWT faltante o invalido.
+  /api/resultados-estudio/:
+    get:
+      operationId: api_resultados_estudio_list
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResultadoEstudio'
+          description: ''
+    post:
+      operationId: api_resultados_estudio_create
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResultadoEstudioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResultadoEstudioRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoEstudio'
+          description: ''
+  /api/resultados-estudio/{id}/:
+    get:
+      operationId: api_resultados_estudio_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Resultado de Estudio.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoEstudio'
+          description: ''
+  /api/seguridad/break-glass/{id}/aprobar/:
+    post:
+      operationId: api_seguridad_break_glass_aprobar_create
+      description: Permite a un Auditor o Director aprobar una solicitud Break-Glass
+        pendiente. Aplica anti-autoaprobacion, activa acceso temporal y registra auditoria/blockchain.
+      summary: Aprobar solicitud Break-Glass
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Break-Glass
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AprobarBreakGlassResponse'
+          description: ''
+        '400':
+          description: Solicitud expirada o datos invalidos.
+        '403':
+          description: Rol no autorizado o intento de autoaprobacion.
+        '404':
+          description: Solicitud Break-Glass no encontrada.
+        '409':
+          description: La solicitud ya no esta pendiente.
+  /api/seguridad/break-glass/{id}/rechazar/:
+    post:
+      operationId: api_seguridad_break_glass_rechazar_create
+      description: Permite a un Auditor o Director rechazar una solicitud Break-Glass
+        pendiente indicando un motivo. Registra auditoria, blockchain y notificacion
+        al solicitante.
+      summary: Rechazar solicitud Break-Glass
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Break-Glass
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudRechazoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RechazarBreakGlassResponse'
+          description: ''
+        '400':
+          description: Motivo de rechazo invalido o solicitud expirada.
+        '403':
+          description: Rol no autorizado o intento de autorevision.
+        '404':
+          description: Solicitud Break-Glass no encontrada.
+        '409':
+          description: La solicitud ya no esta pendiente.
+  /api/seguridad/break-glass/mis-solicitudes/:
+    get:
+      operationId: api_seguridad_break_glass_mis_solicitudes_list
+      description: Devuelve las solicitudes Break-Glass creadas por el usuario autenticado.
+      summary: Listar mis solicitudes Break-Glass
+      tags:
+      - Break-Glass
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BreakGlassSolicitudList'
+          description: ''
+  /api/seguridad/break-glass/pendientes/:
+    get:
+      operationId: api_seguridad_break_glass_pendientes_list
+      description: Devuelve solicitudes pendientes para revision por Auditor, Director
+        o Administrativo.
+      summary: Listar solicitudes Break-Glass pendientes
+      tags:
+      - Break-Glass
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BreakGlassSolicitudList'
+          description: ''
+        '403':
+          description: El usuario no tiene permisos para ver solicitudes pendientes.
+  /api/seguridad/break-glass/solicitar/:
+    post:
+      operationId: api_seguridad_break_glass_solicitar_create
+      description: Crea una solicitud de acceso de emergencia a un expediente. Si
+        la urgencia es ALTA, otorga acceso temporal inmediato por 2 horas.
+      summary: Solicitar acceso Break-Glass
+      tags:
+      - Break-Glass
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BreakGlassSolicitudCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreakGlassSolicitudList'
+          description: ''
+        '400':
+          description: Datos invalidos, solicitud duplicada o justificacion insuficiente.
+        '401':
+          description: Token JWT faltante o invalido.
+        '403':
+          description: Solo usuarios con rol Medico pueden solicitar Break-Glass.
+  /api/tenants/:
+    get:
+      operationId: api_tenants_list
+      description: GET /api/tenants/ — lista todos los establecimientos (solo superadmin).
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tenant'
+          description: ''
+    post:
+      operationId: api_tenants_create
+      description: GET /api/tenants/ — lista todos los establecimientos (solo superadmin).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+  /api/tenants/{id}/:
+    get:
+      operationId: api_tenants_retrieve
+      description: GET/PATCH /api/tenants/<pk>/ — detalle y edición (solo superadmin).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+    put:
+      operationId: api_tenants_update
+      description: GET/PATCH /api/tenants/<pk>/ — detalle y edición (solo superadmin).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+    patch:
+      operationId: api_tenants_partial_update
+      description: GET/PATCH /api/tenants/<pk>/ — detalle y edición (solo superadmin).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+  /api/tenants/{id}/configuracion/:
+    get:
+      operationId: api_tenants_configuracion_retrieve
+      description: |-
+        GET  /api/tenants/<pk>/configuracion/ — lee config de cualquier tenant.
+        PATCH /api/tenants/<pk>/configuracion/ — edita config (solo superadmin).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_tenants_configuracion_partial_update
+      description: |-
+        GET  /api/tenants/<pk>/configuracion/ — lee config de cualquier tenant.
+        PATCH /api/tenants/<pk>/configuracion/ — edita config (solo superadmin).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/tenants/{id}/toggle-activo/:
+    post:
+      operationId: api_tenants_toggle_activo_create
+      description: POST /api/tenants/<pk>/toggle-activo/ — activa o desactiva un tenant.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/tenants/mi-tenant/:
+    get:
+      operationId: api_tenants_mi_tenant_retrieve
+      description: GET /api/tenants/mi-tenant/ — devuelve el establecimiento del usuario
+        autenticado.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/tenants/mi-tenant/configuracion/:
+    get:
+      operationId: api_tenants_mi_tenant_configuracion_retrieve
+      description: |-
+        GET  /api/tenants/mi-tenant/configuracion/ — lee config del tenant del usuario.
+        PATCH /api/tenants/mi-tenant/configuracion/ — edita config (Director/Administrativo).
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_tenants_mi_tenant_configuracion_partial_update
+      description: |-
+        GET  /api/tenants/mi-tenant/configuracion/ — lee config del tenant del usuario.
+        PATCH /api/tenants/mi-tenant/configuracion/ — edita config (Director/Administrativo).
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/tenants/usuarios/:
+    get:
+      operationId: api_tenants_usuarios_retrieve
+      description: |-
+        GET /api/tenants/usuarios/
+        Retorna todos los usuarios (PersonalSalud) agrupados por clínica/tenant.
+        Solo superadmin (is_staff).
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/triaje/:
+    get:
+      operationId: api_triaje_list
+      description: |-
+        CU7 — Endpoints de Triaje. Flujo de dos pasos:
+
+        Paso 1 — clasificar sin guardar:
+            POST /api/triaje/clasificar/   → recibe signos vitales + síntomas
+                                           → devuelve nivel_sugerido + reglas_duras_aplicadas
+                                           → NO toca la BD
+
+        Paso 2 — guardar triaje confirmado:
+            POST /api/triaje/              → recibe todo + nivel confirmado por enfermería
+                                           → guarda registro completo y definitivo en BD
+
+        Consultas:
+            GET  /api/triaje/              → lista con filtros opcionales
+            GET  /api/triaje/{id}/         → detalle de un triaje
+
+        Filtros disponibles (query params):
+            ?paciente=<id>
+            ?nivel_urgencia=ROJO|NARANJA|AMARILLO|VERDE|AZUL
+            ?fecha_desde=YYYY-MM-DD
+            ?fecha_hasta=YYYY-MM-DD
+            ?search=<texto>   (busca en motivo, CI y apellido del paciente)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTriajeList'
+          description: ''
+    post:
+      operationId: api_triaje_create
+      description: |-
+        Guarda el triaje completo y definitivo en BD.
+        Recibe el nivel ya confirmado por enfermería (nivel_urgencia)
+        junto con nivel_sugerido_ia, fue_sobreescrito y justificacion_override.
+        El registro nace completo — un solo evento en auditoría, hash válido para blockchain.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Triaje'
+          description: ''
+  /api/triaje/{id}/:
+    get:
+      operationId: api_triaje_retrieve
+      description: |-
+        CU7 — Endpoints de Triaje. Flujo de dos pasos:
+
+        Paso 1 — clasificar sin guardar:
+            POST /api/triaje/clasificar/   → recibe signos vitales + síntomas
+                                           → devuelve nivel_sugerido + reglas_duras_aplicadas
+                                           → NO toca la BD
+
+        Paso 2 — guardar triaje confirmado:
+            POST /api/triaje/              → recibe todo + nivel confirmado por enfermería
+                                           → guarda registro completo y definitivo en BD
+
+        Consultas:
+            GET  /api/triaje/              → lista con filtros opcionales
+            GET  /api/triaje/{id}/         → detalle de un triaje
+
+        Filtros disponibles (query params):
+            ?paciente=<id>
+            ?nivel_urgencia=ROJO|NARANJA|AMARILLO|VERDE|AZUL
+            ?fecha_desde=YYYY-MM-DD
+            ?fecha_hasta=YYYY-MM-DD
+            ?search=<texto>   (busca en motivo, CI y apellido del paciente)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Triaje.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Triaje'
+          description: ''
+  /api/triaje/clasificar/:
+    post:
+      operationId: api_triaje_clasificar_create
+      description: |-
+        Clasifica con IA sin guardar en BD.
+        El frontend muestra el nivel sugerido a la enfermera para que confirme o cambie.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TriajeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Triaje'
+          description: ''
+  /api/usuarios-sin-perfil/:
+    get:
+      operationId: api_usuarios_sin_perfil_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    AprobarBreakGlassResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+        estado:
+          type: string
+        acceso_desde:
+          type: string
+          format: date-time
+          nullable: true
+        acceso_hasta:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - acceso_desde
+      - acceso_hasta
+      - estado
+      - mensaje
+    BlankEnum:
+      enum:
+      - ''
+    BreakGlassSolicitudCreateRequest:
+      type: object
+      properties:
+        paciente_id:
+          type: integer
+          writeOnly: true
+        justificacion:
+          type: string
+          minLength: 1
+        motivo_rechazo:
+          type: string
+          nullable: true
+        nivel_urgencia:
+          $ref: '#/components/schemas/NivelUrgencia5a1Enum'
+      required:
+      - justificacion
+      - nivel_urgencia
+      - paciente_id
+    BreakGlassSolicitudList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        solicitante_id:
+          type: integer
+          readOnly: true
+        solicitante_username:
+          type: string
+          readOnly: true
+        paciente_id:
+          type: integer
+          readOnly: true
+        paciente_ci:
+          type: string
+          readOnly: true
+        paciente_nombre:
+          type: string
+          readOnly: true
+        justificacion:
+          type: string
+        nivel_urgencia:
+          $ref: '#/components/schemas/NivelUrgencia5a1Enum'
+        estado:
+          $ref: '#/components/schemas/BreakGlassSolicitudListEstadoEnum'
+        aprobado_por_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        acceso_desde:
+          type: string
+          format: date-time
+          nullable: true
+        acceso_hasta:
+          type: string
+          format: date-time
+          nullable: true
+        acceso_activo:
+          type: boolean
+          readOnly: true
+        acceso_expirado:
+          type: boolean
+          readOnly: true
+        evento_blockchain_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        actualizado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - acceso_activo
+      - acceso_expirado
+      - actualizado_en
+      - aprobado_por_id
+      - creado_en
+      - evento_blockchain_id
+      - id
+      - justificacion
+      - nivel_urgencia
+      - paciente_ci
+      - paciente_id
+      - paciente_nombre
+      - solicitante_id
+      - solicitante_username
+      - tenant_id
+    BreakGlassSolicitudListEstadoEnum:
+      enum:
+      - PENDIENTE
+      - APROBADA
+      - RECHAZADA
+      - EXPIRADA
+      type: string
+      description: |-
+        * `PENDIENTE` - Pendiente
+        * `APROBADA` - Aprobada
+        * `RECHAZADA` - Rechazada
+        * `EXPIRADA` - Expirada
+    BreakGlassSolicitudRechazoRequest:
+      type: object
+      properties:
+        motivo_rechazo:
+          type: string
+          minLength: 10
+      required:
+      - motivo_rechazo
+    Consentimiento:
+      type: object
+      description: |-
+        Serializer para el registro de consentimientos de pacientes.
+        Incluye validaciones de negocio críticas.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        paciente:
+          type: integer
+        paciente_nombre:
+          type: string
+          readOnly: true
+        tipo:
+          type: integer
+          title: Tipo de consentimiento
+        tipo_nombre:
+          type: string
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/ConsentimientoEstadoEnum'
+        otorgado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        vigente_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fecha de expiración. Dejar en blanco para vigencia indefinida.
+        registrado_por:
+          type: integer
+          readOnly: true
+        registrado_por_nombre:
+          type: string
+          readOnly: true
+        testigo_nombre:
+          type: string
+          title: Nombre del testigo
+          maxLength: 200
+        observaciones:
+          type: string
+        es_vigente:
+          type: boolean
+          readOnly: true
+      required:
+      - es_vigente
+      - id
+      - otorgado_en
+      - paciente
+      - paciente_nombre
+      - registrado_por
+      - registrado_por_nombre
+      - tipo
+      - tipo_nombre
+    ConsentimientoEstadoEnum:
+      enum:
+      - OTORGADO
+      - RECHAZADO
+      - REVOCADO
+      type: string
+      description: |-
+        * `OTORGADO` - Otorgado
+        * `RECHAZADO` - Rechazado
+        * `REVOCADO` - Revocado
+    ConsentimientoRequest:
+      type: object
+      description: |-
+        Serializer para el registro de consentimientos de pacientes.
+        Incluye validaciones de negocio críticas.
+      properties:
+        paciente:
+          type: integer
+        tipo:
+          type: integer
+          title: Tipo de consentimiento
+        estado:
+          $ref: '#/components/schemas/ConsentimientoEstadoEnum'
+        vigente_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fecha de expiración. Dejar en blanco para vigencia indefinida.
+        testigo_nombre:
+          type: string
+          title: Nombre del testigo
+          maxLength: 200
+        observaciones:
+          type: string
+      required:
+      - paciente
+      - tipo
+    Consulta:
+      type: object
+      description: Serializer clínico completo para consulta SOAP.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ficha:
+          type: integer
+          description: Ficha clínica bajo la cual se registra esta consulta.
+        paciente_nombre:
+          type: string
+          readOnly: true
+        ficha_correlativo:
+          type: string
+          readOnly: true
+        paciente_edad:
+          type: integer
+          nullable: true
+          readOnly: true
+        paciente_genero:
+          type: string
+          readOnly: true
+        medico:
+          type: integer
+          readOnly: true
+          title: Médico
+          description: Médico que realizó la consulta.
+        triaje:
+          type: integer
+          nullable: true
+          description: Triaje previo asociado a esta consulta. Opcional si no pasó
+            por triaje.
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/ConsultaEstadoEnum'
+          readOnly: true
+          description: |-
+            Ciclo de vida: BORRADOR (en edición) → COMPLETADA (lista) → FIRMADA (con firma digital).
+
+            * `BORRADOR` - Borrador
+            * `COMPLETADA` - Completada
+            * `FIRMADA` - Firmada
+        motivo_consulta:
+          type: string
+          default: ''
+        historia_enfermedad_actual:
+          type: string
+          default: ''
+        examen_fisico:
+          type: string
+          title: Examen físico
+          description: 'SOAP-O: Hallazgos del examen físico por sistemas. Ej: Abdomen:
+            dolor en FID a la palpación.'
+        impresion_diagnostica:
+          type: string
+          default: ''
+        codigo_cie10_principal:
+          type: string
+          default: ''
+        codigo_cie10_secundario:
+          type: string
+          title: Código CIE-10 secundario
+          description: 'Diagnóstico secundario: complicación o comorbilidad relevante.
+            Opcional.'
+          maxLength: 10
+        descripcion_cie10:
+          type: string
+          title: Descripción del diagnóstico CIE-10
+          description: Descripción textual del código CIE-10 principal para lectura
+            rápida.
+          maxLength: 300
+        plan_tratamiento:
+          type: string
+          title: Plan de tratamiento
+          description: 'SOAP-P: Indicaciones, tratamiento no farmacológico, seguimiento
+            y controles.'
+        indicaciones_alta:
+          type: string
+          title: Indicaciones al alta
+          description: Instrucciones entregadas al paciente al momento de salir del
+            establecimiento.
+        requiere_derivacion:
+          type: boolean
+          title: Requiere derivación
+          description: True si el paciente necesita ser atendido en otro nivel de
+            atención.
+        derivacion_destino:
+          type: string
+          title: Destino de derivación
+          description: 'Establecimiento o especialidad a donde se deriva. Ej: Hospital
+            de 2do nivel, Cardiología.'
+          maxLength: 200
+        derivacion_motivo:
+          type: string
+          title: Motivo de derivación
+          description: Justificación clínica de por qué se deriva al paciente.
+        hash_documento:
+          type: string
+          readOnly: true
+          title: Hash del documento
+          description: SHA-256 del contenido de la consulta. Vacío hasta que el médico
+            firma. Se ancla en blockchain.
+        firmada_por:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Médico que firmó digitalmente la consulta. Nulo hasta que se
+            firme.
+        firmada_por_nombre:
+          type: string
+          readOnly: true
+        firmada_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp de cuándo se realizó la firma digital.
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp automático de creación de la consulta.
+        actualizado_en:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp automático de la última modificación.
+      required:
+      - actualizado_en
+      - creado_en
+      - estado
+      - ficha
+      - ficha_correlativo
+      - firmada_en
+      - firmada_por
+      - firmada_por_nombre
+      - hash_documento
+      - id
+      - medico
+      - paciente_edad
+      - paciente_genero
+      - paciente_nombre
+    ConsultaEstadoEnum:
+      enum:
+      - BORRADOR
+      - COMPLETADA
+      - FIRMADA
+      type: string
+      description: |-
+        * `BORRADOR` - Borrador
+        * `COMPLETADA` - Completada
+        * `FIRMADA` - Firmada
+    ConsultaRequest:
+      type: object
+      description: Serializer clínico completo para consulta SOAP.
+      properties:
+        ficha:
+          type: integer
+          description: Ficha clínica bajo la cual se registra esta consulta.
+        triaje:
+          type: integer
+          nullable: true
+          description: Triaje previo asociado a esta consulta. Opcional si no pasó
+            por triaje.
+        motivo_consulta:
+          type: string
+          default: ''
+        historia_enfermedad_actual:
+          type: string
+          default: ''
+        examen_fisico:
+          type: string
+          title: Examen físico
+          description: 'SOAP-O: Hallazgos del examen físico por sistemas. Ej: Abdomen:
+            dolor en FID a la palpación.'
+        impresion_diagnostica:
+          type: string
+          default: ''
+        codigo_cie10_principal:
+          type: string
+          default: ''
+        codigo_cie10_secundario:
+          type: string
+          title: Código CIE-10 secundario
+          description: 'Diagnóstico secundario: complicación o comorbilidad relevante.
+            Opcional.'
+          maxLength: 10
+        descripcion_cie10:
+          type: string
+          title: Descripción del diagnóstico CIE-10
+          description: Descripción textual del código CIE-10 principal para lectura
+            rápida.
+          maxLength: 300
+        plan_tratamiento:
+          type: string
+          title: Plan de tratamiento
+          description: 'SOAP-P: Indicaciones, tratamiento no farmacológico, seguimiento
+            y controles.'
+        indicaciones_alta:
+          type: string
+          title: Indicaciones al alta
+          description: Instrucciones entregadas al paciente al momento de salir del
+            establecimiento.
+        requiere_derivacion:
+          type: boolean
+          title: Requiere derivación
+          description: True si el paciente necesita ser atendido en otro nivel de
+            atención.
+        derivacion_destino:
+          type: string
+          title: Destino de derivación
+          description: 'Establecimiento o especialidad a donde se deriva. Ej: Hospital
+            de 2do nivel, Cardiología.'
+          maxLength: 200
+        derivacion_motivo:
+          type: string
+          title: Motivo de derivación
+          description: Justificación clínica de por qué se deriva al paciente.
+      required:
+      - ficha
+    CustomTokenObtainPairRequest:
+      type: object
+      description: |-
+        Extiende el login JWT para:
+        1. Incluir tenant_id en el payload del token (lo usa TenantMiddleware en cada request).
+        2. Incluir datos del tenant en la respuesta JSON (lo usa el frontend para mostrar nombre del establecimiento).
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    DetalleReceta:
+      type: object
+      description: Serializer para cada medicamento de la receta.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        medicamento:
+          type: string
+          description: 'Nombre genérico DCI del medicamento. Ej: Amoxicilina, Ibuprofeno.
+            No usar marcas comerciales.'
+          maxLength: 200
+        concentracion:
+          type: string
+          title: Concentración
+          description: 'Concentración del medicamento. Ej: 500mg, 250mg/5ml, 10mg/ml.'
+          maxLength: 50
+        forma_farmaceutica:
+          type: string
+          title: Forma farmacéutica
+          description: 'Presentación del medicamento. Ej: tableta, jarabe, ampolla,
+            crema, parche.'
+          maxLength: 50
+        via_administracion:
+          allOf:
+          - $ref: '#/components/schemas/ViaAdministracionEnum'
+          title: Vía de administración
+          description: |-
+            Ruta por la que se administra el medicamento. VO = vía oral (más común).
+
+            * `VO` - Vía oral
+            * `IV` - Intravenosa
+            * `IM` - Intramuscular
+            * `SC` - Subcutánea
+            * `TOP` - Tópica
+            * `INH` - Inhalatoria
+            * `SL` - Sublingual
+            * `REC` - Rectal
+            * `OFT` - Oftálmica
+            * `OTR` - Otra
+        dosis:
+          type: string
+          description: 'Cantidad a administrar por toma. Ej: 1 tableta, 5ml, 500mg.'
+          maxLength: 100
+        frecuencia:
+          type: string
+          description: 'Cada cuánto se toma. Ej: cada 8 horas, 3 veces al día, una
+            vez al día.'
+          maxLength: 100
+        duracion:
+          type: string
+          title: Duración
+          description: 'Por cuánto tiempo. Ej: 7 días, 1 mes, hasta terminar.'
+          maxLength: 100
+        cantidad_total:
+          type: string
+          title: Cantidad total a dispensar
+          description: 'Total que debe entregar farmacia. Ej: 21 tabletas, 1 frasco
+            de 120ml.'
+          maxLength: 50
+        instrucciones:
+          type: string
+          title: Instrucciones especiales
+          description: 'Indicaciones adicionales para el paciente. Ej: tomar con alimentos,
+            evitar el sol.'
+        orden:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Posición del medicamento en la receta impresa. 1 = primero,
+            2 = segundo, etc.
+      required:
+      - dosis
+      - duracion
+      - frecuencia
+      - id
+      - medicamento
+    DetalleRecetaRequest:
+      type: object
+      description: Serializer para cada medicamento de la receta.
+      properties:
+        medicamento:
+          type: string
+          minLength: 1
+          description: 'Nombre genérico DCI del medicamento. Ej: Amoxicilina, Ibuprofeno.
+            No usar marcas comerciales.'
+          maxLength: 200
+        concentracion:
+          type: string
+          title: Concentración
+          description: 'Concentración del medicamento. Ej: 500mg, 250mg/5ml, 10mg/ml.'
+          maxLength: 50
+        forma_farmaceutica:
+          type: string
+          title: Forma farmacéutica
+          description: 'Presentación del medicamento. Ej: tableta, jarabe, ampolla,
+            crema, parche.'
+          maxLength: 50
+        via_administracion:
+          allOf:
+          - $ref: '#/components/schemas/ViaAdministracionEnum'
+          title: Vía de administración
+          description: |-
+            Ruta por la que se administra el medicamento. VO = vía oral (más común).
+
+            * `VO` - Vía oral
+            * `IV` - Intravenosa
+            * `IM` - Intramuscular
+            * `SC` - Subcutánea
+            * `TOP` - Tópica
+            * `INH` - Inhalatoria
+            * `SL` - Sublingual
+            * `REC` - Rectal
+            * `OFT` - Oftálmica
+            * `OTR` - Otra
+        dosis:
+          type: string
+          minLength: 1
+          description: 'Cantidad a administrar por toma. Ej: 1 tableta, 5ml, 500mg.'
+          maxLength: 100
+        frecuencia:
+          type: string
+          minLength: 1
+          description: 'Cada cuánto se toma. Ej: cada 8 horas, 3 veces al día, una
+            vez al día.'
+          maxLength: 100
+        duracion:
+          type: string
+          minLength: 1
+          title: Duración
+          description: 'Por cuánto tiempo. Ej: 7 días, 1 mes, hasta terminar.'
+          maxLength: 100
+        cantidad_total:
+          type: string
+          title: Cantidad total a dispensar
+          description: 'Total que debe entregar farmacia. Ej: 21 tabletas, 1 frasco
+            de 120ml.'
+          maxLength: 50
+        instrucciones:
+          type: string
+          title: Instrucciones especiales
+          description: 'Indicaciones adicionales para el paciente. Ej: tomar con alimentos,
+            evitar el sol.'
+        orden:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Posición del medicamento en la receta impresa. 1 = primero,
+            2 = segundo, etc.
+      required:
+      - dosis
+      - duracion
+      - frecuencia
+      - medicamento
+    Especialidad:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 120
+      required:
+      - id
+      - nombre
+    EspecialidadRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+      - nombre
+    EstadoC12Enum:
+      enum:
+      - SOLICITADA
+      - EN_PROCESO
+      - COMPLETADA
+      - ANULADA
+      type: string
+      description: |-
+        * `SOLICITADA` - Solicitada
+        * `EN_PROCESO` - En Proceso
+        * `COMPLETADA` - Completada
+        * `ANULADA` - Anulada
+    Ficha:
+      type: object
+      description: 'CRUD principal: alta con paciente_id; lectura enriquecida con
+        paciente y profesional_apertura.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correlativo:
+          type: string
+          readOnly: true
+        paciente:
+          allOf:
+          - $ref: '#/components/schemas/PacienteFichaBrief'
+          readOnly: true
+        profesional_apertura:
+          allOf:
+          - $ref: '#/components/schemas/ProfesionalFichaBrief'
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/FichaEstadoEnum'
+        fecha_apertura:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de apertura
+        fecha_inicio_atencion:
+          type: string
+          format: date-time
+          nullable: true
+          title: Inicio de atención médica
+        fecha_cierre:
+          type: string
+          format: date-time
+          nullable: true
+          title: Fecha de cierre
+        esta_activa:
+          type: boolean
+          title: Activa (no eliminada lógicamente)
+        triaje_resumen:
+          type: string
+          readOnly: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        actualizado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actualizado_en
+      - correlativo
+      - creado_en
+      - fecha_apertura
+      - id
+      - paciente
+      - profesional_apertura
+      - triaje_resumen
+    FichaEstadoEnum:
+      enum:
+      - ABIERTA
+      - EN_TRIAJE
+      - EN_ATENCION
+      - CERRADA
+      - CANCELADA
+      type: string
+      description: |-
+        * `ABIERTA` - Abierta
+        * `EN_TRIAJE` - En Triaje
+        * `EN_ATENCION` - En Atención
+        * `CERRADA` - Cerrada
+        * `CANCELADA` - Cancelada
+    FichaRequest:
+      type: object
+      description: 'CRUD principal: alta con paciente_id; lectura enriquecida con
+        paciente y profesional_apertura.'
+      properties:
+        paciente_id:
+          type: integer
+          writeOnly: true
+          description: ID del paciente activo.
+        estado:
+          $ref: '#/components/schemas/FichaEstadoEnum'
+        fecha_inicio_atencion:
+          type: string
+          format: date-time
+          nullable: true
+          title: Inicio de atención médica
+        fecha_cierre:
+          type: string
+          format: date-time
+          nullable: true
+          title: Fecha de cierre
+        esta_activa:
+          type: boolean
+          title: Activa (no eliminada lógicamente)
+      required:
+      - paciente_id
+    GeneroEnum:
+      enum:
+      - M
+      - F
+      - O
+      type: string
+      description: |-
+        * `M` - M
+        * `F` - F
+        * `O` - O
+    NivelSugeridoIaEnum:
+      enum:
+      - ROJO
+      - NARANJA
+      - AMARILLO
+      - VERDE
+      - AZUL
+      type: string
+      description: |-
+        * `ROJO` - Rojo - Inmediato
+        * `NARANJA` - Naranja - Muy urgente
+        * `AMARILLO` - Amarillo - Urgente
+        * `VERDE` - Verde - Poco urgente
+        * `AZUL` - Azul - No urgente
+    NivelUrgencia5a1Enum:
+      enum:
+      - ALTA
+      - MEDIA
+      - BAJA
+      type: string
+      description: |-
+        * `ALTA` - Alta
+        * `MEDIA` - Media
+        * `BAJA` - Baja
+    NivelUrgenciaB87Enum:
+      enum:
+      - ROJO
+      - NARANJA
+      - AMARILLO
+      - VERDE
+      - AZUL
+      type: string
+      description: |-
+        * `ROJO` - Rojo - Inmediato
+        * `NARANJA` - Naranja - Muy urgente
+        * `AMARILLO` - Amarillo - Urgente
+        * `VERDE` - Verde - Poco urgente
+        * `AZUL` - Azul - No urgente
+    NullEnum:
+      enum:
+      - null
+    OrdenEstudioCambiarEstado:
+      type: object
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoC12Enum'
+        resultado_texto:
+          type: string
+        resultado_archivo:
+          type: string
+          format: uri
+          nullable: true
+        tecnico_responsable_id:
+          type: integer
+          nullable: true
+      required:
+      - estado
+    OrdenEstudioCreate:
+      type: object
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        descripcion:
+          type: string
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+      required:
+      - descripcion
+      - indicacion_clinica
+      - tipo
+    OrdenEstudioCreateRequest:
+      type: object
+      properties:
+        consulta_id:
+          type: integer
+          writeOnly: true
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        descripcion:
+          type: string
+          minLength: 1
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          minLength: 1
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+      required:
+      - consulta_id
+      - descripcion
+      - indicacion_clinica
+      - tipo
+    OrdenEstudioDetail:
+      type: object
+      description: Detalle completo con datos de consulta y paciente.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correlativo_orden:
+          type: string
+          readOnly: true
+          title: Correlativo
+        consulta_id:
+          type: integer
+          readOnly: true
+        paciente_nombre:
+          type: string
+          readOnly: true
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        tipo_label:
+          type: string
+          readOnly: true
+        descripcion:
+          type: string
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+        estado:
+          $ref: '#/components/schemas/EstadoC12Enum'
+        estado_label:
+          type: string
+          readOnly: true
+        fecha_solicitud:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de solicitud
+        fecha_inicio_proceso:
+          type: string
+          format: date-time
+          nullable: true
+          title: Inicio en laboratorio
+        fecha_completada:
+          type: string
+          format: date-time
+          nullable: true
+          title: Completada
+        medico_solicitante:
+          type: integer
+          title: Médico solicitante
+        medico_solicitante_nombre:
+          type: string
+          readOnly: true
+        tecnico_responsable:
+          type: integer
+          nullable: true
+          title: Técnico responsable
+        tecnico_responsable_nombre:
+          type: string
+          readOnly: true
+        resultado_texto:
+          type: string
+          nullable: true
+          title: Resultado (texto)
+        resultado_archivo:
+          type: string
+          format: uri
+          nullable: true
+          title: Resultado (archivo)
+        esta_activa:
+          type: boolean
+          title: Activa
+        creado_en:
+          type: string
+          format: date-time
+        actualizado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actualizado_en
+      - consulta_id
+      - correlativo_orden
+      - descripcion
+      - estado_label
+      - fecha_solicitud
+      - id
+      - indicacion_clinica
+      - medico_solicitante
+      - medico_solicitante_nombre
+      - paciente_nombre
+      - tecnico_responsable_nombre
+      - tipo
+      - tipo_label
+    OrdenEstudioList:
+      type: object
+      description: Listados compactos con campos suficientes para el panel de detalle.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        correlativo_orden:
+          type: string
+          readOnly: true
+          title: Correlativo
+        consulta_id:
+          type: integer
+          readOnly: true
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        tipo_label:
+          type: string
+          readOnly: true
+        descripcion:
+          type: string
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+        estado:
+          $ref: '#/components/schemas/EstadoC12Enum'
+        estado_label:
+          type: string
+          readOnly: true
+        fecha_solicitud:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de solicitud
+        paciente_nombre:
+          type: string
+          readOnly: true
+        medico_solicitante_nombre:
+          type: string
+          readOnly: true
+        resultado:
+          type: string
+          readOnly: true
+      required:
+      - consulta_id
+      - correlativo_orden
+      - descripcion
+      - estado_label
+      - fecha_solicitud
+      - id
+      - indicacion_clinica
+      - medico_solicitante_nombre
+      - paciente_nombre
+      - resultado
+      - tipo
+      - tipo_label
+    OrdenEstudioUpdateMedico:
+      type: object
+      description: Actualización por médico (sin estado terminal).
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        descripcion:
+          type: string
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+      required:
+      - descripcion
+      - indicacion_clinica
+      - tipo
+    OrdenEstudioUpdateMedicoRequest:
+      type: object
+      description: Actualización por médico (sin estado terminal).
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        descripcion:
+          type: string
+          minLength: 1
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          minLength: 1
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+      required:
+      - descripcion
+      - indicacion_clinica
+      - tipo
+    Paciente:
+      type: object
+      description: 'API T010: nombre/apellido/genero mapean a nombres/apellido_paterno/sexo.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ci:
+          type: string
+          pattern: ^\d+$
+          maxLength: 10
+          minLength: 4
+        ci_complemento:
+          type: string
+          default: ''
+          maxLength: 2
+        nombre:
+          type: string
+          maxLength: 100
+        apellido:
+          type: string
+          maxLength: 100
+        apellido_materno:
+          type: string
+          maxLength: 100
+        fecha_nacimiento:
+          type: string
+          format: date
+          title: Fecha de nacimiento
+        genero:
+          $ref: '#/components/schemas/GeneroEnum'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        telefono:
+          type: string
+          maxLength: 15
+        direccion:
+          type: string
+          maxLength: 200
+        activo:
+          type: boolean
+          readOnly: true
+        establecimiento:
+          type: string
+          readOnly: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        actualizado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activo
+      - actualizado_en
+      - apellido
+      - ci
+      - creado_en
+      - establecimiento
+      - fecha_nacimiento
+      - genero
+      - id
+      - nombre
+    PacienteFichaBrief:
+      type: object
+      description: Datos compactos del paciente en respuestas de ficha.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre_completo:
+          type: string
+          readOnly: true
+        ci:
+          type: string
+          title: Carnet de Identidad
+          maxLength: 15
+      required:
+      - ci
+      - id
+      - nombre_completo
+    PacienteFichaBriefRequest:
+      type: object
+      description: Datos compactos del paciente en respuestas de ficha.
+      properties:
+        ci:
+          type: string
+          minLength: 1
+          title: Carnet de Identidad
+          maxLength: 15
+      required:
+      - ci
+    PacienteRequest:
+      type: object
+      description: 'API T010: nombre/apellido/genero mapean a nombres/apellido_paterno/sexo.'
+      properties:
+        ci:
+          type: string
+          minLength: 4
+          pattern: ^\d+$
+          maxLength: 10
+        ci_complemento:
+          type: string
+          default: ''
+          maxLength: 2
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
+        apellido:
+          type: string
+          minLength: 1
+          maxLength: 100
+        apellido_materno:
+          type: string
+          maxLength: 100
+        fecha_nacimiento:
+          type: string
+          format: date
+          title: Fecha de nacimiento
+        genero:
+          $ref: '#/components/schemas/GeneroEnum'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        telefono:
+          type: string
+          maxLength: 15
+        direccion:
+          type: string
+          maxLength: 200
+      required:
+      - apellido
+      - ci
+      - fecha_nacimiento
+      - genero
+      - nombre
+    PaginatedConsultaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consulta'
+    PaginatedFichaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ficha'
+    PaginatedPacienteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Paciente'
+    PaginatedRegistroAuditoriaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistroAuditoria'
+    PaginatedTriajeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Triaje'
+    PatchedConsentimientoRequest:
+      type: object
+      description: |-
+        Serializer para el registro de consentimientos de pacientes.
+        Incluye validaciones de negocio críticas.
+      properties:
+        paciente:
+          type: integer
+        tipo:
+          type: integer
+          title: Tipo de consentimiento
+        estado:
+          $ref: '#/components/schemas/ConsentimientoEstadoEnum'
+        vigente_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fecha de expiración. Dejar en blanco para vigencia indefinida.
+        testigo_nombre:
+          type: string
+          title: Nombre del testigo
+          maxLength: 200
+        observaciones:
+          type: string
+    PatchedConsultaRequest:
+      type: object
+      description: Serializer clínico completo para consulta SOAP.
+      properties:
+        ficha:
+          type: integer
+          description: Ficha clínica bajo la cual se registra esta consulta.
+        triaje:
+          type: integer
+          nullable: true
+          description: Triaje previo asociado a esta consulta. Opcional si no pasó
+            por triaje.
+        motivo_consulta:
+          type: string
+          default: ''
+        historia_enfermedad_actual:
+          type: string
+          default: ''
+        examen_fisico:
+          type: string
+          title: Examen físico
+          description: 'SOAP-O: Hallazgos del examen físico por sistemas. Ej: Abdomen:
+            dolor en FID a la palpación.'
+        impresion_diagnostica:
+          type: string
+          default: ''
+        codigo_cie10_principal:
+          type: string
+          default: ''
+        codigo_cie10_secundario:
+          type: string
+          title: Código CIE-10 secundario
+          description: 'Diagnóstico secundario: complicación o comorbilidad relevante.
+            Opcional.'
+          maxLength: 10
+        descripcion_cie10:
+          type: string
+          title: Descripción del diagnóstico CIE-10
+          description: Descripción textual del código CIE-10 principal para lectura
+            rápida.
+          maxLength: 300
+        plan_tratamiento:
+          type: string
+          title: Plan de tratamiento
+          description: 'SOAP-P: Indicaciones, tratamiento no farmacológico, seguimiento
+            y controles.'
+        indicaciones_alta:
+          type: string
+          title: Indicaciones al alta
+          description: Instrucciones entregadas al paciente al momento de salir del
+            establecimiento.
+        requiere_derivacion:
+          type: boolean
+          title: Requiere derivación
+          description: True si el paciente necesita ser atendido en otro nivel de
+            atención.
+        derivacion_destino:
+          type: string
+          title: Destino de derivación
+          description: 'Establecimiento o especialidad a donde se deriva. Ej: Hospital
+            de 2do nivel, Cardiología.'
+          maxLength: 200
+        derivacion_motivo:
+          type: string
+          title: Motivo de derivación
+          description: Justificación clínica de por qué se deriva al paciente.
+    PatchedEspecialidadRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+    PatchedFichaRequest:
+      type: object
+      description: 'CRUD principal: alta con paciente_id; lectura enriquecida con
+        paciente y profesional_apertura.'
+      properties:
+        paciente_id:
+          type: integer
+          writeOnly: true
+          description: ID del paciente activo.
+        estado:
+          $ref: '#/components/schemas/FichaEstadoEnum'
+        fecha_inicio_atencion:
+          type: string
+          format: date-time
+          nullable: true
+          title: Inicio de atención médica
+        fecha_cierre:
+          type: string
+          format: date-time
+          nullable: true
+          title: Fecha de cierre
+        esta_activa:
+          type: boolean
+          title: Activa (no eliminada lógicamente)
+    PatchedOrdenEstudioCambiarEstadoRequest:
+      type: object
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoC12Enum'
+        resultado_texto:
+          type: string
+        resultado_archivo:
+          type: string
+          format: binary
+          nullable: true
+        tecnico_responsable_id:
+          type: integer
+          nullable: true
+    PatchedOrdenEstudioUpdateMedicoRequest:
+      type: object
+      description: Actualización por médico (sin estado terminal).
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        descripcion:
+          type: string
+          minLength: 1
+          title: Descripción del estudio
+          description: Descripción detallada del estudio solicitado.
+        indicacion_clinica:
+          type: string
+          minLength: 1
+          title: Indicación clínica
+          description: Justificación médica del estudio.
+        urgente:
+          type: boolean
+        motivo_urgencia:
+          type: string
+          nullable: true
+          title: Motivo de urgencia
+          description: Obligatorio si urgente=True.
+    PatchedPacienteRequest:
+      type: object
+      description: 'API T010: nombre/apellido/genero mapean a nombres/apellido_paterno/sexo.'
+      properties:
+        ci:
+          type: string
+          minLength: 4
+          pattern: ^\d+$
+          maxLength: 10
+        ci_complemento:
+          type: string
+          default: ''
+          maxLength: 2
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
+        apellido:
+          type: string
+          minLength: 1
+          maxLength: 100
+        apellido_materno:
+          type: string
+          maxLength: 100
+        fecha_nacimiento:
+          type: string
+          format: date
+          title: Fecha de nacimiento
+        genero:
+          $ref: '#/components/schemas/GeneroEnum'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        telefono:
+          type: string
+          maxLength: 15
+        direccion:
+          type: string
+          maxLength: 200
+    PatchedPersonalSaludUpdateRequest:
+      type: object
+      description: Solo campos editables post-creación (el usuario no se puede cambiar).
+      properties:
+        item_min_salud:
+          type: string
+          minLength: 1
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+          maxLength: 30
+    PatchedRecetaRequest:
+      type: object
+      description: Serializer anidado de Receta con sus detalles (medicamentos).
+      properties:
+        consulta:
+          type: integer
+          description: Consulta médica en la que se emitió esta receta.
+        observaciones:
+          type: string
+          description: Notas adicionales del médico sobre la receta.
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetalleRecetaRequest'
+    PatchedTenantRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          title: Nombre del establecimiento
+          description: 'Nombre oficial del establecimiento de salud. Ej: Hospital
+            San Juan de Dios'
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          title: Identificador único
+          description: 'Identificador URL-friendly del establecimiento. Ej: hospital-san-juan.
+            Se usa internamente.'
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        nit:
+          type: string
+          description: Número de Identificación Tributaria del establecimiento.
+          maxLength: 20
+        direccion:
+          type: string
+          title: Dirección
+        telefono:
+          type: string
+          title: Teléfono
+          maxLength: 30
+        activo:
+          type: boolean
+          description: Desactivar para suspender acceso al establecimiento sin eliminar
+            sus datos.
+    PatchedTipoConsentimientoRequest:
+      type: object
+      description: Serializer para la configuración de tipos de consentimiento.
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 200
+        descripcion:
+          type: string
+          minLength: 1
+          title: Descripción (Texto legal)
+        requiere_testigo:
+          type: boolean
+        activo:
+          type: boolean
+    PersonalSalud:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        item_min_salud:
+          type: string
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+          maxLength: 30
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_active
+      - item_min_salud
+      - rol
+      - updated_at
+      - user
+    PersonalSaludCreate:
+      type: object
+      description: Crea usuario Django + perfil PersonalSalud en una sola operación.
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          default: ''
+        item_min_salud:
+          type: string
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          default: ''
+          maxLength: 30
+      required:
+      - first_name
+      - item_min_salud
+      - last_name
+      - rol
+      - username
+    PersonalSaludCreateRequest:
+      type: object
+      description: Crea usuario Django + perfil PersonalSalud en una sola operación.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          default: ''
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        item_min_salud:
+          type: string
+          minLength: 1
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          default: ''
+          maxLength: 30
+      required:
+      - first_name
+      - item_min_salud
+      - last_name
+      - password
+      - rol
+      - username
+    PersonalSaludRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          writeOnly: true
+        item_min_salud:
+          type: string
+          minLength: 1
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+          maxLength: 30
+      required:
+      - item_min_salud
+      - rol
+      - user_id
+    PersonalSaludUpdate:
+      type: object
+      description: Solo campos editables post-creación (el usuario no se puede cambiar).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        item_min_salud:
+          type: string
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+          maxLength: 30
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - id
+      - is_active
+      - item_min_salud
+      - rol
+      - user
+    PersonalSaludUpdateRequest:
+      type: object
+      description: Solo campos editables post-creación (el usuario no se puede cambiar).
+      properties:
+        item_min_salud:
+          type: string
+          minLength: 1
+          maxLength: 20
+        rol:
+          $ref: '#/components/schemas/RolEnum'
+        especialidad:
+          type: integer
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+          maxLength: 30
+      required:
+      - item_min_salud
+      - rol
+    ProfesionalFichaBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - nombre
+    Receta:
+      type: object
+      description: Serializer anidado de Receta con sus detalles (medicamentos).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        consulta:
+          type: integer
+          description: Consulta médica en la que se emitió esta receta.
+        medico:
+          type: integer
+          readOnly: true
+          title: Médico
+          description: Médico que emitió la receta.
+        numero_receta:
+          type: string
+          readOnly: true
+          title: Número de receta
+          description: 'Correlativo único generado automáticamente. Ej: REC-2026-00123.'
+        fecha_emision:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Fecha de emisión
+          description: Timestamp automático de cuándo fue emitida la receta.
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/RecetaEstadoEnum'
+          readOnly: true
+          description: |-
+            Estado de la receta: EMITIDA (pendiente de dispensar), DISPENSADA (entregada en farmacia), ANULADA.
+
+            * `EMITIDA` - Emitida
+            * `DISPENSADA` - Dispensada
+            * `ANULADA` - Anulada
+        dispensada_por:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Personal de farmacia que dispensó la receta. Nulo hasta que
+            se dispense.
+        fecha_dispensacion:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Fecha de dispensación
+          description: Timestamp de cuándo fue dispensada en farmacia.
+        observaciones:
+          type: string
+          description: Notas adicionales del médico sobre la receta.
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetalleReceta'
+      required:
+      - consulta
+      - detalles
+      - dispensada_por
+      - estado
+      - fecha_dispensacion
+      - fecha_emision
+      - id
+      - medico
+      - numero_receta
+    RecetaEstadoEnum:
+      enum:
+      - EMITIDA
+      - DISPENSADA
+      - ANULADA
+      type: string
+      description: |-
+        * `EMITIDA` - Emitida
+        * `DISPENSADA` - Dispensada
+        * `ANULADA` - Anulada
+    RecetaRequest:
+      type: object
+      description: Serializer anidado de Receta con sus detalles (medicamentos).
+      properties:
+        consulta:
+          type: integer
+          description: Consulta médica en la que se emitió esta receta.
+        observaciones:
+          type: string
+          description: Notas adicionales del médico sobre la receta.
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetalleRecetaRequest'
+      required:
+      - consulta
+      - detalles
+    RechazarBreakGlassResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+        estado:
+          type: string
+        motivo_rechazo:
+          type: string
+        notificacion:
+          type: object
+          additionalProperties: {}
+      required:
+      - estado
+      - mensaje
+      - motivo_rechazo
+      - notificacion
+    Register:
+      type: object
+      description: |-
+        Registro de usuario nuevo.
+        Crea la entrada en auth_user con contraseña hasheada (PBKDF2+SHA256).
+      properties:
+        username:
+          type: string
+          description: Nombre de usuario único para login.
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          description: Correo electrónico del usuario.
+        first_name:
+          type: string
+          default: ''
+          description: Nombre (opcional, se usa personal_salud en el sistema clínico).
+          maxLength: 150
+        last_name:
+          type: string
+          default: ''
+          description: Apellido (opcional).
+          maxLength: 150
+      required:
+      - email
+      - username
+    RegisterRequest:
+      type: object
+      description: |-
+        Registro de usuario nuevo.
+        Crea la entrada en auth_user con contraseña hasheada (PBKDF2+SHA256).
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Nombre de usuario único para login.
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          description: Correo electrónico del usuario.
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+          description: Contraseña (mínimo 8 caracteres).
+        password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+          description: Confirmación de contraseña.
+        first_name:
+          type: string
+          minLength: 1
+          default: ''
+          description: Nombre (opcional, se usa personal_salud en el sistema clínico).
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          default: ''
+          description: Apellido (opcional).
+          maxLength: 150
+      required:
+      - email
+      - password
+      - password_confirm
+      - username
+    RegistroAuditoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+        usuario_username:
+          type: string
+        accion:
+          type: string
+          readOnly: true
+        modulo:
+          type: string
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+        detalles:
+          type: string
+          readOnly: true
+      required:
+      - accion
+      - detalles
+      - id
+      - ip_address
+      - modulo
+      - timestamp
+      - usuario_username
+    ResultadoEstudio:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        orden:
+          type: integer
+          title: Orden de estudio
+        ingresado_por:
+          type: integer
+          readOnly: true
+        fecha_resultado:
+          type: string
+          format: date-time
+          title: Fecha del resultado
+        archivo_adjunto:
+          type: string
+          format: uri
+          nullable: true
+        nombre_archivo:
+          type: string
+          readOnly: true
+          title: Nombre del archivo
+        valores_resultado:
+          type: string
+          title: Valores del resultado
+        interpretacion_medica:
+          type: string
+          title: Interpretación médica
+        interpretado_por:
+          type: integer
+          nullable: true
+        fecha_interpretacion:
+          type: string
+          format: date-time
+          nullable: true
+          title: Fecha de interpretación
+        hash_sha256:
+          type: string
+          readOnly: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - creado_en
+      - fecha_resultado
+      - hash_sha256
+      - id
+      - ingresado_por
+      - nombre_archivo
+      - orden
+    ResultadoEstudioRequest:
+      type: object
+      properties:
+        orden:
+          type: integer
+          title: Orden de estudio
+        fecha_resultado:
+          type: string
+          format: date-time
+          title: Fecha del resultado
+        archivo_adjunto:
+          type: string
+          format: binary
+          nullable: true
+        valores_resultado:
+          type: string
+          title: Valores del resultado
+        interpretacion_medica:
+          type: string
+          title: Interpretación médica
+        interpretado_por:
+          type: integer
+          nullable: true
+        fecha_interpretacion:
+          type: string
+          format: date-time
+          nullable: true
+          title: Fecha de interpretación
+      required:
+      - fecha_resultado
+      - orden
+    RolEnum:
+      enum:
+      - medico
+      - enfermera
+      - admin
+      type: string
+      description: |-
+        * `medico` - Medico
+        * `enfermera` - Enfermera
+        * `admin` - Admin
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          title: Nombre del establecimiento
+          description: 'Nombre oficial del establecimiento de salud. Ej: Hospital
+            San Juan de Dios'
+          maxLength: 200
+        slug:
+          type: string
+          title: Identificador único
+          description: 'Identificador URL-friendly del establecimiento. Ej: hospital-san-juan.
+            Se usa internamente.'
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        nit:
+          type: string
+          description: Número de Identificación Tributaria del establecimiento.
+          maxLength: 20
+        direccion:
+          type: string
+          title: Dirección
+        telefono:
+          type: string
+          title: Teléfono
+          maxLength: 30
+        activo:
+          type: boolean
+          description: Desactivar para suspender acceso al establecimiento sin eliminar
+            sus datos.
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - creado_en
+      - id
+      - nombre
+      - slug
+    TenantRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          title: Nombre del establecimiento
+          description: 'Nombre oficial del establecimiento de salud. Ej: Hospital
+            San Juan de Dios'
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          title: Identificador único
+          description: 'Identificador URL-friendly del establecimiento. Ej: hospital-san-juan.
+            Se usa internamente.'
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        nit:
+          type: string
+          description: Número de Identificación Tributaria del establecimiento.
+          maxLength: 20
+        direccion:
+          type: string
+          title: Dirección
+        telefono:
+          type: string
+          title: Teléfono
+          maxLength: 30
+        activo:
+          type: boolean
+          description: Desactivar para suspender acceso al establecimiento sin eliminar
+            sus datos.
+      required:
+      - nombre
+      - slug
+    TipoConsentimiento:
+      type: object
+      description: Serializer para la configuración de tipos de consentimiento.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 200
+        descripcion:
+          type: string
+          title: Descripción (Texto legal)
+        requiere_testigo:
+          type: boolean
+        activo:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Creado en
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Actualizado en
+      required:
+      - created_at
+      - descripcion
+      - id
+      - nombre
+      - updated_at
+    TipoConsentimientoRequest:
+      type: object
+      description: Serializer para la configuración de tipos de consentimiento.
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 200
+        descripcion:
+          type: string
+          minLength: 1
+          title: Descripción (Texto legal)
+        requiere_testigo:
+          type: boolean
+        activo:
+          type: boolean
+      required:
+      - descripcion
+      - nombre
+    TipoEnum:
+      enum:
+      - LAB
+      - RX
+      - ECO
+      - TC
+      - RMN
+      - ECG
+      - END
+      - OTRO
+      type: string
+      description: |-
+        * `LAB` - Laboratorio
+        * `RX` - Radiografía
+        * `ECO` - Ecografía
+        * `TC` - Tomografía Computarizada
+        * `RMN` - Resonancia Magnética
+        * `ECG` - Electrocardiograma
+        * `END` - Endoscopía
+        * `OTRO` - Otro
+    TokenBlacklistRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TokenVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - token
+    Triaje:
+      type: object
+      description: |-
+        Paso 2 del flujo de dos pasos.
+        Recibe el triaje completo con el nivel ya confirmado por enfermería.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ficha:
+          type: integer
+        ficha_detail:
+          type: string
+          readOnly: true
+        enfermera:
+          type: integer
+          readOnly: true
+          title: Enfermera/o
+          description: Personal de enfermería que realizó el triaje.
+        peso_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          title: Peso (kg)
+          description: 'Peso del paciente en kilogramos. Rango válido: 0.5 – 500 kg.'
+        talla_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+          nullable: true
+          title: Talla (cm)
+          description: 'Talla del paciente en centímetros. Rango válido: 20 – 250
+            cm.'
+        frecuencia_cardiaca:
+          type: integer
+          maximum: 300
+          minimum: 20
+          nullable: true
+          title: Frecuencia cardíaca (lpm)
+          description: 'Latidos por minuto. Rango válido: 20 – 300 lpm.'
+        frecuencia_respiratoria:
+          type: integer
+          maximum: 80
+          minimum: 5
+          nullable: true
+          title: Frecuencia respiratoria (rpm)
+          description: 'Respiraciones por minuto. Rango válido: 5 – 80 rpm.'
+        presion_sistolica:
+          type: integer
+          maximum: 300
+          minimum: 40
+          nullable: true
+          title: Presión sistólica (mmHg)
+          description: 'Número de arriba en la presión arterial. Rango válido: 40
+            – 300 mmHg.'
+        presion_diastolica:
+          type: integer
+          maximum: 200
+          minimum: 20
+          nullable: true
+          title: Presión diastólica (mmHg)
+          description: 'Número de abajo en la presión arterial. Rango válido: 20 –
+            200 mmHg.'
+        temperatura_celsius:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+          title: Temperatura (°C)
+          description: 'Temperatura corporal en grados Celsius. Rango válido: 25 –
+            45 °C.'
+        saturacion_oxigeno:
+          type: integer
+          maximum: 100
+          minimum: 50
+          nullable: true
+          title: Saturación de oxígeno (SpO2 %)
+          description: 'Saturación de oxígeno en sangre. Rango válido: 50 – 100 %.
+            Normal > 95%.'
+        glucemia:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+          nullable: true
+          title: Glucemia capilar (mg/dL)
+          description: Glucosa en sangre capilar en mg/dL. Solo si aplica clínicamente.
+        escala_dolor:
+          type: integer
+          maximum: 10
+          minimum: 0
+          nullable: true
+          title: Escala de dolor EVA
+          description: 'Escala Visual Analógica: 0 = sin dolor, 10 = dolor máximo
+            insoportable.'
+        glasgow:
+          type: integer
+          maximum: 15
+          minimum: 3
+          nullable: true
+          title: Escala de Glasgow
+          description: 'Escala de coma de Glasgow: 3 (coma profundo) – 15 (normal).'
+        motivo_consulta_triaje:
+          type: string
+          title: Motivo de consulta (triaje)
+          description: Resumen del motivo de consulta anotado por enfermería. Este
+            texto es procesado por el modelo NLP de triaje.
+        observaciones:
+          type: string
+          description: Observaciones adicionales de enfermería durante el triaje.
+        nivel_sugerido_ia:
+          nullable: true
+          title: Nivel sugerido por IA
+          description: |-
+            Nivel que el modelo ML sugirió antes de la confirmación de enfermería.
+
+            * `ROJO` - Rojo - Inmediato
+            * `NARANJA` - Naranja - Muy urgente
+            * `AMARILLO` - Amarillo - Urgente
+            * `VERDE` - Verde - Poco urgente
+            * `AZUL` - Azul - No urgente
+          oneOf:
+          - $ref: '#/components/schemas/NivelSugeridoIaEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        nivel_urgencia:
+          nullable: true
+          title: Nivel de urgencia final
+          description: |-
+            Nivel confirmado. Igual al sugerido por IA salvo que enfermería lo haya sobreescrito.
+
+            * `ROJO` - Rojo - Inmediato
+            * `NARANJA` - Naranja - Muy urgente
+            * `AMARILLO` - Amarillo - Urgente
+            * `VERDE` - Verde - Poco urgente
+            * `AZUL` - Azul - No urgente
+          oneOf:
+          - $ref: '#/components/schemas/NivelUrgenciaB87Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        fue_sobreescrito:
+          type: boolean
+          title: Sobreescrito por enfermería
+          description: True si la enfermera cambió el nivel sugerido por la IA.
+        justificacion_override:
+          type: string
+          title: Justificación del cambio
+          description: Obligatorio cuando fue_sobreescrito=True. Queda en auditoría.
+        reglas_duras_aplicadas:
+          type: boolean
+          description: True si el modelo forzó un nivel por SpO₂, PA o Glasgow críticos.
+        hora_triaje:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Hora de triaje
+          description: Timestamp automático de cuándo se realizó el triaje.
+        imc:
+          type: string
+          readOnly: true
+        presion_arterial:
+          type: string
+          readOnly: true
+      required:
+      - enfermera
+      - ficha
+      - ficha_detail
+      - hora_triaje
+      - id
+      - imc
+      - presion_arterial
+    TriajeRequest:
+      type: object
+      description: |-
+        Paso 2 del flujo de dos pasos.
+        Recibe el triaje completo con el nivel ya confirmado por enfermería.
+      properties:
+        ficha:
+          type: integer
+        peso_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          title: Peso (kg)
+          description: 'Peso del paciente en kilogramos. Rango válido: 0.5 – 500 kg.'
+        talla_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+          nullable: true
+          title: Talla (cm)
+          description: 'Talla del paciente en centímetros. Rango válido: 20 – 250
+            cm.'
+        frecuencia_cardiaca:
+          type: integer
+          maximum: 300
+          minimum: 20
+          nullable: true
+          title: Frecuencia cardíaca (lpm)
+          description: 'Latidos por minuto. Rango válido: 20 – 300 lpm.'
+        frecuencia_respiratoria:
+          type: integer
+          maximum: 80
+          minimum: 5
+          nullable: true
+          title: Frecuencia respiratoria (rpm)
+          description: 'Respiraciones por minuto. Rango válido: 5 – 80 rpm.'
+        presion_sistolica:
+          type: integer
+          maximum: 300
+          minimum: 40
+          nullable: true
+          title: Presión sistólica (mmHg)
+          description: 'Número de arriba en la presión arterial. Rango válido: 40
+            – 300 mmHg.'
+        presion_diastolica:
+          type: integer
+          maximum: 200
+          minimum: 20
+          nullable: true
+          title: Presión diastólica (mmHg)
+          description: 'Número de abajo en la presión arterial. Rango válido: 20 –
+            200 mmHg.'
+        temperatura_celsius:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+          title: Temperatura (°C)
+          description: 'Temperatura corporal en grados Celsius. Rango válido: 25 –
+            45 °C.'
+        saturacion_oxigeno:
+          type: integer
+          maximum: 100
+          minimum: 50
+          nullable: true
+          title: Saturación de oxígeno (SpO2 %)
+          description: 'Saturación de oxígeno en sangre. Rango válido: 50 – 100 %.
+            Normal > 95%.'
+        glucemia:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+          nullable: true
+          title: Glucemia capilar (mg/dL)
+          description: Glucosa en sangre capilar en mg/dL. Solo si aplica clínicamente.
+        escala_dolor:
+          type: integer
+          maximum: 10
+          minimum: 0
+          nullable: true
+          title: Escala de dolor EVA
+          description: 'Escala Visual Analógica: 0 = sin dolor, 10 = dolor máximo
+            insoportable.'
+        glasgow:
+          type: integer
+          maximum: 15
+          minimum: 3
+          nullable: true
+          title: Escala de Glasgow
+          description: 'Escala de coma de Glasgow: 3 (coma profundo) – 15 (normal).'
+        motivo_consulta_triaje:
+          type: string
+          title: Motivo de consulta (triaje)
+          description: Resumen del motivo de consulta anotado por enfermería. Este
+            texto es procesado por el modelo NLP de triaje.
+        observaciones:
+          type: string
+          description: Observaciones adicionales de enfermería durante el triaje.
+        nivel_sugerido_ia:
+          nullable: true
+          title: Nivel sugerido por IA
+          description: |-
+            Nivel que el modelo ML sugirió antes de la confirmación de enfermería.
+
+            * `ROJO` - Rojo - Inmediato
+            * `NARANJA` - Naranja - Muy urgente
+            * `AMARILLO` - Amarillo - Urgente
+            * `VERDE` - Verde - Poco urgente
+            * `AZUL` - Azul - No urgente
+          oneOf:
+          - $ref: '#/components/schemas/NivelSugeridoIaEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        nivel_urgencia:
+          nullable: true
+          title: Nivel de urgencia final
+          description: |-
+            Nivel confirmado. Igual al sugerido por IA salvo que enfermería lo haya sobreescrito.
+
+            * `ROJO` - Rojo - Inmediato
+            * `NARANJA` - Naranja - Muy urgente
+            * `AMARILLO` - Amarillo - Urgente
+            * `VERDE` - Verde - Poco urgente
+            * `AZUL` - Azul - No urgente
+          oneOf:
+          - $ref: '#/components/schemas/NivelUrgenciaB87Enum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        fue_sobreescrito:
+          type: boolean
+          title: Sobreescrito por enfermería
+          description: True si la enfermera cambió el nivel sugerido por la IA.
+        justificacion_override:
+          type: string
+          title: Justificación del cambio
+          description: Obligatorio cuando fue_sobreescrito=True. Queda en auditoría.
+        reglas_duras_aplicadas:
+          type: boolean
+          description: True si el modelo forzó un nivel por SpO₂, PA o Glasgow críticos.
+      required:
+      - ficha
+    ViaAdministracionEnum:
+      enum:
+      - VO
+      - IV
+      - IM
+      - SC
+      - TOP
+      - INH
+      - SL
+      - REC
+      - OFT
+      - OTR
+      type: string
+      description: |-
+        * `VO` - Vía oral
+        * `IV` - Intravenosa
+        * `IM` - Intramuscular
+        * `SC` - Subcutánea
+        * `TOP` - Tópica
+        * `INH` - Inhalatoria
+        * `SL` - Sublingual
+        * `REC` - Rectal
+        * `OFT` - Oftálmica
+        * `OTR` - Otra
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

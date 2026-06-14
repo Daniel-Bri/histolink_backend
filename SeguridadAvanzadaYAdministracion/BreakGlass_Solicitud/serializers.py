@@ -21,6 +21,7 @@ class BreakGlassSolicitudCreateSerializer(serializers.ModelSerializer):
             "id",
             "paciente_id",
             "justificacion",
+            "motivo_rechazo",
             "nivel_urgencia",
             "estado",
             "acceso_desde",

@@ -11,6 +11,9 @@ djangorestframework==3.15.2
 # -- AUTENTICACION JWT -----------------------------------------------------
 djangorestframework-simplejwt==5.3.1
 
+# -- DOCUMENTACION API -----------------------------------------------------
+drf-spectacular==0.27.2
+
 # -- BASE DE DATOS POSTGRESQL ----------------------------------------------
 psycopg2-binary==2.9.9
 

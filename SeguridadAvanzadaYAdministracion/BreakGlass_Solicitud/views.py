@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,6 +25,21 @@ def _es_auditor_director_admin(user) -> bool:
 class BreakGlassSolicitarView(APIView):
     permission_classes = [permissions.IsAuthenticated, EsMedico]
 
+    @extend_schema(
+        tags=["Break-Glass"],
+        summary="Solicitar acceso Break-Glass",
+        description=(
+            "Crea una solicitud de acceso de emergencia a un expediente. "
+            "Si la urgencia es ALTA, otorga acceso temporal inmediato por 2 horas."
+        ),
+        request=BreakGlassSolicitudCreateSerializer,
+        responses={
+            201: BreakGlassSolicitudListSerializer,
+            400: OpenApiResponse(description="Datos invalidos, solicitud duplicada o justificacion insuficiente."),
+            401: OpenApiResponse(description="Token JWT faltante o invalido."),
+            403: OpenApiResponse(description="Solo usuarios con rol Medico pueden solicitar Break-Glass."),
+        },
+    )
     def post(self, request):
         serializer = BreakGlassSolicitudCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -34,6 +50,7 @@ class BreakGlassSolicitarView(APIView):
             return Response(detail, status=status.HTTP_400_BAD_REQUEST)
 
         payload = {
+            "solicitud_id": solicitud.id,
             "solicitante_id": solicitud.solicitante_id,
             "paciente_id": solicitud.paciente_id,
             "nivel_urgencia": solicitud.nivel_urgencia,
@@ -44,6 +61,9 @@ class BreakGlassSolicitarView(APIView):
             tipo_evento="BREAK_GLASS_SOLICITUD",
             payload=payload,
             tenant_id=solicitud.tenant_id,
+            documento_tipo="BreakGlassSolicitud",
+            documento_id=solicitud.id,
+            firmado_por=request.user,
         )
         solicitud.evento_blockchain = evento
         solicitud.save(update_fields=["evento_blockchain", "actualizado_en"])
@@ -67,6 +87,12 @@ class BreakGlassSolicitarView(APIView):
 class BreakGlassMisSolicitudesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=["Break-Glass"],
+        summary="Listar mis solicitudes Break-Glass",
+        description="Devuelve las solicitudes Break-Glass creadas por el usuario autenticado.",
+        responses={200: BreakGlassSolicitudListSerializer(many=True)},
+    )
     def get(self, request):
         qs = BreakGlassSolicitud.objects.filter(solicitante=request.user).select_related("paciente", "solicitante")
         return Response(BreakGlassSolicitudListSerializer(qs, many=True).data)
@@ -75,6 +101,15 @@ class BreakGlassMisSolicitudesView(APIView):
 class BreakGlassPendientesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=["Break-Glass"],
+        summary="Listar solicitudes Break-Glass pendientes",
+        description="Devuelve solicitudes pendientes para revision por Auditor, Director o Administrativo.",
+        responses={
+            200: BreakGlassSolicitudListSerializer(many=True),
+            403: OpenApiResponse(description="El usuario no tiene permisos para ver solicitudes pendientes."),
+        },
+    )
     def get(self, request):
         if not _es_auditor_director_admin(request.user):
             return Response({"detail": "No tiene permisos para ver solicitudes pendientes."}, status=status.HTTP_403_FORBIDDEN)
