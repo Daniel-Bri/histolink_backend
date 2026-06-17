@@ -14,6 +14,14 @@ from .serializers import CrearSesionCobroSerializer
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
+
+from .serializers import CobroSerializer
 
 class CrearSesionCobroView(APIView):
     permission_classes = [IsAuthenticated, EsAdmin]
@@ -75,3 +83,68 @@ class CrearSesionCobroView(APIView):
             {"cobro_id": cobro.id, "checkout_url": session.url},
             status=status.HTTP_201_CREATED,
         )
+    
+
+class AnularCobroView(APIView):
+    permission_classes = [IsAuthenticated, EsAdmin]
+
+    def post(self, request, pk):
+        cobro = get_object_or_404(Cobro, pk=pk)
+
+        if request.tenant is not None and cobro.tenant_id != request.tenant.id:
+            return Response(
+                {"detail": "No tienes acceso a este cobro."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if cobro.estado != Cobro.Estado.PENDIENTE:
+            return Response(
+                {"detail": f"No se puede anular un cobro en estado {cobro.estado}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cobro.estado = Cobro.Estado.ANULADO
+        cobro.save(update_fields=["estado"])
+        registrar_evento("ANULAR", cobro, cambios={"estado": "ANULADO"}, request=request)
+
+        return Response(CobroSerializer(cobro).data, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@require_POST
+def webhook_cobro(request):
+    """
+    Webhook de Stripe. Sin JWT (Stripe no envía token) — por eso es una vista
+    de Django normal, no un APIView de DRF (así evitamos los permisos/autenticación
+    por defecto del proyecto).
+    """
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return JsonResponse({"detail": "Firma de webhook inválida."}, status=400)
+
+    event_type = event["type"]
+    data_object = event["data"]["object"]
+    session_id = data_object.get("id")
+
+    if event_type == "checkout.session.completed":
+        cobro = Cobro.objects.filter(stripe_session_id=session_id).first()
+        if cobro and cobro.estado == Cobro.Estado.PENDIENTE:
+            cobro.estado = Cobro.Estado.PAGADO
+            cobro.fecha_pago = timezone.now()
+            cobro.save(update_fields=["estado", "fecha_pago"])
+            registrar_evento("UPDATE", cobro, cambios={"estado": "PAGADO", "origen": "webhook_stripe"})
+
+    elif event_type == "checkout.session.expired":
+        cobro = Cobro.objects.filter(stripe_session_id=session_id).first()
+        if cobro and cobro.estado == Cobro.Estado.PENDIENTE:
+            cobro.estado = Cobro.Estado.EXPIRADO
+            cobro.save(update_fields=["estado"])
+            registrar_evento("UPDATE", cobro, cambios={"estado": "EXPIRADO", "origen": "webhook_stripe"})
+
+    return HttpResponse(status=200)
