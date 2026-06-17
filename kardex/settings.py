@@ -33,6 +33,11 @@ SECRET_KEY = config(
     default="django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml",
 )
 
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
+
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env_bool(config("DEBUG", default="True"), default=True)
 
@@ -89,6 +94,8 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.BackupRestore",
     # ── Auditoría ─────────────────────────────────────────────────────
     "SeguridadAvanzadaYAdministracion.Auditoria",
+    # ── Cobros ────────────────────────────────────────────────────────
+    "GestionDeCobros",
 ]
 
 MIDDLEWARE = [

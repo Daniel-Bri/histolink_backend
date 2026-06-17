@@ -69,6 +69,9 @@ urlpatterns = [
     path('api/', include('AtencionClinica.FirmaDigitalDeConsulta.urls')),
     # SeguridadAvanzadaYAdministracion — CU16: Break-Glass Solicitud
     path("api/seguridad/break-glass/", include("SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud.urls")),
+
+    # GestionDeCobros — CU23: Generación de Sesión de Cobro (T040)
+    path("api/cobros/", include("GestionDeCobros.urls")),
 ]
 
 if settings.DEBUG:
