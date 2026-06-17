@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST
 from SeguridadAvanzadaYAdministracion.Auditoria.audit_utils import registrar_evento
 
 from .serializers import CobroSerializer
+from rest_framework.generics import ListAPIView
 
 class CrearSesionCobroView(APIView):
     permission_classes = [IsAuthenticated, EsAdmin]
@@ -148,3 +149,15 @@ def webhook_cobro(request):
             registrar_evento("UPDATE", cobro, cambios={"estado": "EXPIRADO", "origen": "webhook_stripe"})
 
     return HttpResponse(status=200)
+
+
+class ListarCobrosView(ListAPIView):
+    serializer_class = CobroSerializer
+    permission_classes = [IsAuthenticated, EsAdmin]
+
+    def get_queryset(self):
+        qs = Cobro.objects.all().order_by("-creado_en")
+        ficha_id = self.request.query_params.get("ficha")
+        if ficha_id:
+            qs = qs.filter(ficha_id=ficha_id)
+        return qs
