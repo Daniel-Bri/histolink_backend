@@ -82,6 +82,22 @@ class FichaViewSet(viewsets.ModelViewSet):
 
         return qs.order_by("-fecha_apertura")
 
+    def perform_create(self, serializer):
+        ficha = serializer.save()
+        tenant = getattr(self.request, "tenant", None)
+        if tenant:
+            try:
+                from Notificaciones.fcm_service import notificar_medicos_tenant
+                paciente = ficha.paciente
+                notificar_medicos_tenant(
+                    tenant_id=tenant.id,
+                    titulo="Nueva ficha en cola",
+                    cuerpo=f"Paciente {paciente.nombre} {paciente.apellido_paterno} está esperando atención.",
+                    datos={"ficha_id": str(ficha.id), "paciente_id": str(paciente.id)},
+                )
+            except Exception:
+                pass
+
     def perform_destroy(self, instance: Ficha):
         """Borrado lógico opcional."""
         instance.esta_activa = False
