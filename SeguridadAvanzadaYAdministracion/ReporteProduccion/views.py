@@ -22,6 +22,8 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -58,6 +60,38 @@ class ReporteProduccionView(APIView):
 
     # ── Entrada ───────────────────────────────────────────────────────────────
 
+    @extend_schema(
+        tags=["Reportes"],
+        summary="Reporte de produccion",
+        description=(
+            "Genera reportes de produccion con filtros manuales o busqueda inteligente por q. "
+            "Puede devolver JSON o exportar el mismo reporte en CSV, Excel o PDF."
+        ),
+        parameters=[
+            OpenApiParameter("fecha_desde", OpenApiTypes.DATE, description="Fecha inicial YYYY-MM-DD."),
+            OpenApiParameter("fecha_hasta", OpenApiTypes.DATE, description="Fecha final YYYY-MM-DD."),
+            OpenApiParameter("medico_id", OpenApiTypes.INT, description="ID del medico."),
+            OpenApiParameter("medico_nombre", OpenApiTypes.STR, description="Nombre o apellido del medico."),
+            OpenApiParameter(
+                "nivel_urgencia",
+                OpenApiTypes.STR,
+                description="Nivel de urgencia: ROJO, NARANJA, AMARILLO, VERDE o AZUL.",
+            ),
+            OpenApiParameter("codigo_cie10", OpenApiTypes.STR, description="Codigo diagnostico CIE-10."),
+            OpenApiParameter(
+                "tipo_reporte",
+                OpenApiTypes.STR,
+                description="resumen_general, consultas, triajes, recetas_emitidas, recetas_dispensadas o recetas_anuladas.",
+            ),
+            OpenApiParameter("q", OpenApiTypes.STR, description="Texto libre interpretado por NLP."),
+            OpenApiParameter("formato", OpenApiTypes.STR, description="json, csv, excel o pdf."),
+        ],
+        responses={
+            200: OpenApiResponse(description="Reporte JSON o archivo exportado segun formato."),
+            400: OpenApiResponse(description="Filtros invalidos, por ejemplo fecha_desde mayor a fecha_hasta."),
+            401: OpenApiResponse(description="Token JWT faltante o invalido."),
+        },
+    )
     def get(self, request):
         params_or_response = self._resolver_params(request)
         if isinstance(params_or_response, Response):

@@ -1,5 +1,6 @@
 # service.py — Puente entre Blockchain simulada y PostgreSQL
 import hashlib
+import json
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.backends import default_backend
@@ -83,9 +84,15 @@ def firmar_con_rsa(contenido: str, clave_privada_pem: str) -> str:
     return firma.hex()
 
 
-def agregar_evento_blockchain(tenant, tipo_evento: str, documento_tipo: str,
-                               documento_id: int, hash_documento: str,
-                               firmado_por, clave_privada_pem: str) -> EventoBlockchain:
+def agregar_evento_blockchain(
+    tenant,
+    tipo_evento: str,
+    documento_tipo: str,
+    documento_id: int,
+    hash_documento: str,
+    firmado_por,
+    clave_privada_pem: str | None,
+) -> EventoBlockchain:
     """
     Agrega un nuevo bloque a la blockchain simulada en PostgreSQL.
     Reconstruye la cadena desde la BD, agrega el bloque y lo persiste.
@@ -109,8 +116,21 @@ def agregar_evento_blockchain(tenant, tipo_evento: str, documento_tipo: str,
         blockchain.cadena.append(bloque)
 
     # Firmar el contenido
-    contenido = f"{tipo_evento}{documento_tipo}{documento_id}{hash_documento}"
-    firma_rsa = firmar_con_rsa(contenido, clave_privada_pem)
+    contenido = json.dumps(
+        {
+            'tipo_evento': tipo_evento,
+            'documento_tipo': documento_tipo,
+            'documento_id': documento_id,
+            'hash_documento': hash_documento,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+        default=str,
+    )
+    if clave_privada_pem:
+        firma_rsa = firmar_con_rsa(contenido, clave_privada_pem)
+    else:
+        firma_rsa = hashlib.sha256(contenido.encode('utf-8')).hexdigest()
 
     # Agregar nuevo bloque
     nuevo_bloque = blockchain.agregar_bloque({

@@ -141,7 +141,9 @@ class BreakGlassSolicitudAPITests(TestCase):
         self.assertIsNotNone(solicitud.evento_blockchain_id)
         ev = EventoBlockchain.objects.get(id=solicitud.evento_blockchain_id)
         self.assertEqual(ev.tipo_evento, "BREAK_GLASS_SOLICITUD")
-        self.assertEqual(ev.payload["paciente_id"], self.paciente.id)
+        self.assertEqual(ev.documento_tipo, "BreakGlassSolicitud")
+        self.assertEqual(ev.documento_id, solicitud.id)
+        self.assertEqual(len(ev.hash_documento), 64)
         self.assertTrue(
             RegistroAuditoria.objects.filter(
                 modelo="BreakGlassSolicitud",

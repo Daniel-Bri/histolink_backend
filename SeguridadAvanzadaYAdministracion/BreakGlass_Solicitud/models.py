@@ -39,6 +39,7 @@ class BreakGlassSolicitud(models.Model):
         related_name="break_glass_solicitudes",
     )
     justificacion = models.TextField()
+    motivo_rechazo = models.TextField(blank=True, null=True)
     nivel_urgencia = models.CharField(max_length=10, choices=NivelUrgencia.choices)
     estado = models.CharField(
         max_length=12,
@@ -91,6 +92,17 @@ class BreakGlassSolicitud(models.Model):
     def acceso_expirado(self) -> bool:
         return bool(self.acceso_hasta and self.acceso_hasta < timezone.now())
 
+    @classmethod
+    def expirar_vencidas(cls) -> int:
+        now = timezone.now()
+        return cls.objects.filter(
+            estado=cls.Estado.PENDIENTE,
+            acceso_hasta__lt=now,
+        ).update(
+            estado=cls.Estado.EXPIRADA,
+            actualizado_en=now,
+        )
+
     def aplicar_urgencia_alta_si_corresponde(self) -> None:
         if self.nivel_urgencia == self.NivelUrgencia.ALTA and not self.acceso_desde:
             now = timezone.now()
@@ -111,8 +123,13 @@ class BreakGlassSolicitud(models.Model):
             solicitante_id=self.solicitante_id,
             paciente_id=self.paciente_id,
         ).exclude(pk=self.pk).filter(
-            Q(estado=self.Estado.PENDIENTE) |
-            Q(acceso_hasta__gt=timezone.now(), acceso_desde__isnull=False)
+            Q(estado=self.Estado.PENDIENTE, acceso_hasta__isnull=True) |
+            Q(estado=self.Estado.PENDIENTE, acceso_hasta__gte=timezone.now()) |
+            Q(
+                estado=self.Estado.APROBADA,
+                acceso_hasta__gte=timezone.now(),
+                acceso_desde__isnull=False,
+            )
         )
         if conflicto.exists():
             raise ValidationError(

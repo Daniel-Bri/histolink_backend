@@ -1,7 +1,10 @@
 from django.urls import path
 
+from .views import BreakGlassAprobarView, BreakGlassRechazarView
+
 app_name = "BreakGlass_Aprobacion"
 
 urlpatterns = [
-    # Endpoints de CU18 - Protocolo Break-Glass: Aprobación — pendientes de implementación.
+    path("<int:pk>/aprobar/", BreakGlassAprobarView.as_view(), name="breakglass-aprobar"),
+    path("<int:pk>/rechazar/", BreakGlassRechazarView.as_view(), name="breakglass-rechazar"),
 ]

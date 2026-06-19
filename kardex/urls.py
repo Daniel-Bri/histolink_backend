@@ -6,12 +6,17 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
+from SeguridadAvanzadaYAdministracion.BreakGlass_Aprobacion import urls as breakglass_aprobacion_urls
 from GestionDeUsuarios.GestionDePersonalDeSalud.urls import especialidades_urlpatterns
 from GestionDeUsuarios.GestionDePersonalDeSalud.views import usuarios_sin_perfil
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 
     # Multitenant — establecimientos
     path("api/tenants/", include("Tenants.urls")),
@@ -72,6 +77,15 @@ urlpatterns = [
 
     # GestionDeCobros — CU23: Generación de Sesión de Cobro (T040)
     path("api/cobros/", include("GestionDeCobros.urls")),
+    # SeguridadAvanzadaYAdministracion — CU17: Break-Glass Aprobación / Rechazo
+    path(
+        "api/emergencia/",
+        include((breakglass_aprobacion_urls.urlpatterns, breakglass_aprobacion_urls.app_name), namespace="breakglass_emergencia"),
+    ),
+    path(
+        "api/seguridad/break-glass/",
+        include((breakglass_aprobacion_urls.urlpatterns, breakglass_aprobacion_urls.app_name), namespace="breakglass_aprobacion"),
+    ),
 ]
 
 if settings.DEBUG:
