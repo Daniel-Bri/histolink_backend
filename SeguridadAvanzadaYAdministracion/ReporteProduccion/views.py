@@ -3,6 +3,7 @@ Reportes/ReporteProduccion/views.py
 
 T037 — GET /api/reportes/produccion/
 T038 — Exportar Excel / CSV / PDF (despachado desde la misma vista)
+T008 — GET /api/reportes/snis/   Morbilidad CIE-10 para SNIS Bolivia
 
 Filtros disponibles (query params):
     fecha_desde     YYYY-MM-DD  (default: primer día del mes actual)
@@ -30,7 +31,8 @@ from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
 from AtencionClinica.EmisionDeRecetaMedica.models import Receta
 from AtencionClinica.RegistroDeTriaje.models import Triaje
 
-from .exportadores import exportar_csv, exportar_excel, exportar_pdf
+from SeguridadAvanzadaYAdministracion.Auditoria.models import RegistroAuditoria
+from .exportadores import exportar_csv, exportar_excel, exportar_pdf, exportar_snis_csv, exportar_snis_excel, exportar_snis_pdf
 from .nlp_filtros import parsear_texto
 
 NIVELES_ORDEN = ["ROJO", "NARANJA", "AMARILLO", "VERDE", "AZUL"]
@@ -465,7 +467,7 @@ class ReporteProduccionView(APIView):
         if total_consultas == 0 and total_triajes == 0 and recetas_emitidas == 0 and recetas_dispensadas == 0 and recetas_anuladas == 0:
             advertencias.append("No se encontraron registros para los filtros aplicados.")
 
-        response = {
+        response = {  # noqa: RUF012
             "tipo_reporte": tipo_reporte,
             "periodo": {
                 "desde":  fecha_desde,
@@ -514,3 +516,163 @@ class ReporteProduccionView(APIView):
             response["detalle_recetas"] = detalle_recetas
 
         return response
+
+
+# ── CU19 — Reporte SNIS / Morbilidad ─────────────────────────────────────────
+
+_ROLES_SNIS = {'Auditor', 'Director', 'Administrativo', 'Médico'}
+
+
+class ReporteSNISView(APIView):
+    """
+    GET /api/reportes/snis/
+
+    Morbilidad por código CIE-10 para reporte al SNIS Bolivia.
+    Filtra automáticamente por tenant del usuario autenticado (multitenant).
+    Registra cada consulta en la bitácora de auditoría.
+
+    Filtros:
+        fecha_desde     YYYY-MM-DD  (default: primer día del mes actual)
+        fecha_hasta     YYYY-MM-DD  (default: hoy)
+        codigo_cie10    string      (parcial, ej: J18, E11)
+        sexo            M | F       (opcional)
+        formato         json | csv | excel | pdf  (default: json)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        grupos = set(user.groups.values_list('name', flat=True))
+        if not (user.is_superuser or grupos & _ROLES_SNIS):
+            return Response(
+                {"detail": "No tienes permisos para ver reportes SNIS."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        hoy = date.today()
+        params = request.query_params
+
+        fecha_desde  = params.get("fecha_desde") or hoy.replace(day=1).isoformat()
+        fecha_hasta  = params.get("fecha_hasta") or hoy.isoformat()
+        codigo_cie10 = params.get("codigo_cie10", "").strip().upper()
+        sexo         = params.get("sexo", "").strip().upper()
+        formato      = params.get("formato", "json").lower()
+
+        try:
+            date.fromisoformat(fecha_desde)
+            date.fromisoformat(fecha_hasta)
+        except ValueError:
+            return Response(
+                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        datos = self._agregar_snis(fecha_desde, fecha_hasta, codigo_cie10, sexo)
+        self._registrar_auditoria(request, fecha_desde, fecha_hasta, codigo_cie10, sexo, formato)
+
+        if formato == "csv":
+            return exportar_snis_csv(datos)
+        if formato == "excel":
+            return exportar_snis_excel(datos)
+        if formato == "pdf":
+            return exportar_snis_pdf(datos)
+
+        return Response(datos)
+
+    def _agregar_snis(self, fecha_desde, fecha_hasta, codigo_cie10, sexo):
+        # TenantManager filtra automáticamente por tenant del hilo actual
+        qs = Consulta.objects.filter(
+            creado_en__date__gte=fecha_desde,
+            creado_en__date__lte=fecha_hasta,
+            estado__in=["COMPLETADA", "FIRMADA"],
+        ).exclude(codigo_cie10_principal="")
+
+        if codigo_cie10:
+            qs = qs.filter(codigo_cie10_principal__icontains=codigo_cie10)
+        if sexo in ("M", "F"):
+            qs = qs.filter(ficha__paciente__sexo=sexo)
+
+        # Morbilidad agrupada por código CIE-10
+        morbilidad_raw = list(
+            qs.values("codigo_cie10_principal", "descripcion_cie10")
+              .annotate(total=Count("id"))
+              .order_by("-total")
+        )
+        total_casos = sum(r["total"] for r in morbilidad_raw)
+
+        # Desglose por sexo por código
+        desglose_sexo = {}
+        for item in (
+            qs.values("codigo_cie10_principal", "ficha__paciente__sexo")
+              .annotate(total=Count("id"))
+        ):
+            cod = item["codigo_cie10_principal"]
+            s   = item["ficha__paciente__sexo"] or "?"
+            desglose_sexo.setdefault(cod, {})
+            desglose_sexo[cod][s] = desglose_sexo[cod].get(s, 0) + item["total"]
+
+        morbilidad = []
+        for r in morbilidad_raw:
+            cod = r["codigo_cie10_principal"]
+            ds  = desglose_sexo.get(cod, {})
+            morbilidad.append({
+                "codigo":      cod,
+                "descripcion": r["descripcion_cie10"] or "",
+                "total":       r["total"],
+                "masculino":   ds.get("M", 0),
+                "femenino":    ds.get("F", 0),
+                "porcentaje":  round(r["total"] * 100 / total_casos, 1) if total_casos else 0.0,
+            })
+
+        filtros_aplicados = {"fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta}
+        if codigo_cie10:
+            filtros_aplicados["codigo_cie10"] = codigo_cie10
+        if sexo:
+            filtros_aplicados["sexo"] = sexo
+
+        return {
+            "periodo": {"fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta},
+            "filtros_aplicados": filtros_aplicados,
+            "resumen": {
+                "total_casos": total_casos,
+                "total_diagnosticos_distintos": len(morbilidad),
+            },
+            "morbilidad": morbilidad,
+        }
+
+    def _registrar_auditoria(self, request, fecha_desde, fecha_hasta, codigo_cie10, sexo, formato):
+        user   = request.user
+        grupos = user.groups.all()
+        rol    = grupos[0].name if grupos.exists() else "Sin Rol"
+        tenant_id     = None
+        tenant_nombre = ""
+        if hasattr(request, "tenant") and request.tenant:
+            tenant_id     = request.tenant.id
+            tenant_nombre = request.tenant.nombre
+        cambios = {
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta,
+            "formato": formato,
+        }
+        if codigo_cie10:
+            cambios["codigo_cie10"] = codigo_cie10
+        if sexo:
+            cambios["sexo"] = sexo
+        try:
+            RegistroAuditoria.objects.create(
+                accion="CREATE",
+                modelo="ReporteSNIS",
+                objeto_id=f"{fecha_desde}_{fecha_hasta}",
+                objeto_repr=f"Reporte SNIS {fecha_desde} — {fecha_hasta}",
+                usuario_id=user.id,
+                usuario_nombre=user.username,
+                usuario_rol=rol,
+                tenant_id=tenant_id,
+                tenant_nombre=tenant_nombre,
+                cambios=cambios,
+                ip_origen=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+                endpoint=request.path,
+            )
+        except Exception:
+            logger.exception("[ReporteSNIS] Error al registrar auditoría")

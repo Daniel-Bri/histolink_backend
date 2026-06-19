@@ -602,3 +602,235 @@ def exportar_pdf(datos: dict) -> HttpResponse:
     response = HttpResponse(buffer.read(), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
     return response
+
+
+# ── SNIS — exportadores específicos ──────────────────────────────────────────
+
+def exportar_snis_csv(datos: dict) -> HttpResponse:
+    periodo        = datos["periodo"]
+    nombre_archivo = f"reporte_snis_{periodo['fecha_desde']}_{periodo['fecha_hasta']}.csv"
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
+    response.write("﻿")  # BOM para Excel en Windows
+
+    writer = csv.writer(response, delimiter=";")
+    resumen = datos["resumen"]
+
+    writer.writerow(["REPORTE SNIS — MORBILIDAD POR DIAGNÓSTICO CIE-10 — HISTOLINK"])
+    writer.writerow([f"Período: {periodo['fecha_desde']} al {periodo['fecha_hasta']}"])
+    writer.writerow([])
+    writer.writerow(["RESUMEN"])
+    writer.writerow(["Total de casos", resumen["total_casos"]])
+    writer.writerow(["Diagnósticos distintos", resumen["total_diagnosticos_distintos"]])
+    filtros = datos.get("filtros_aplicados", {})
+    if filtros.get("codigo_cie10"):
+        writer.writerow(["Filtro CIE-10", filtros["codigo_cie10"]])
+    if filtros.get("sexo"):
+        writer.writerow(["Filtro sexo", filtros["sexo"]])
+    writer.writerow([])
+    writer.writerow(["#", "Código CIE-10", "Descripción", "Total casos", "Masculino", "Femenino", "% del total"])
+    for i, r in enumerate(datos["morbilidad"], start=1):
+        writer.writerow([
+            i,
+            r["codigo"],
+            r["descripcion"],
+            r["total"],
+            r["masculino"],
+            r["femenino"],
+            f"{r['porcentaje']}%",
+        ])
+    return response
+
+
+def exportar_snis_excel(datos: dict) -> HttpResponse:
+    import openpyxl
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    periodo        = datos["periodo"]
+    nombre_archivo = f"reporte_snis_{periodo['fecha_desde']}_{periodo['fecha_hasta']}.xlsx"
+    resumen        = datos["resumen"]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SNIS Morbilidad"
+
+    COLOR_TITULO  = "1F4E79"
+    COLOR_HEADER  = "2E75B6"
+    COLOR_SUB     = "D6E4F0"
+    centro = Alignment(horizontal="center", vertical="center")
+
+    # Título
+    ws.merge_cells("A1:G1")
+    t = ws["A1"]
+    t.value     = "REPORTE SNIS — MORBILIDAD POR DIAGNÓSTICO CIE-10"
+    t.font      = Font(bold=True, size=13, color="FFFFFF")
+    t.fill      = PatternFill("solid", fgColor=COLOR_TITULO)
+    t.alignment = centro
+    ws.row_dimensions[1].height = 22
+
+    ws.merge_cells("A2:G2")
+    s = ws["A2"]
+    s.value     = f"Período: {periodo['fecha_desde']} — {periodo['fecha_hasta']}"
+    s.fill      = PatternFill("solid", fgColor=COLOR_SUB)
+    s.alignment = centro
+
+    # Resumen
+    ws["A3"] = "Total casos"
+    ws["B3"] = resumen["total_casos"]
+    ws["D3"] = "Diagnósticos distintos"
+    ws["E3"] = resumen["total_diagnosticos_distintos"]
+    for cell in [ws["A3"], ws["D3"]]:
+        cell.font = Font(bold=True)
+
+    # Cabecera tabla
+    headers = ["#", "Código CIE-10", "Descripción", "Total", "Masculino", "Femenino", "% del total"]
+    for col, h in enumerate(headers, start=1):
+        c = ws.cell(row=5, column=col, value=h)
+        c.font      = Font(bold=True, color="FFFFFF")
+        c.fill      = PatternFill("solid", fgColor=COLOR_HEADER)
+        c.alignment = centro
+
+    # Datos
+    alt = PatternFill("solid", fgColor="EBF3FA")
+    for i, r in enumerate(datos["morbilidad"], start=1):
+        row = 5 + i
+        ws.cell(row=row, column=1, value=i)
+        ws.cell(row=row, column=2, value=r["codigo"])
+        ws.cell(row=row, column=3, value=r["descripcion"])
+        ws.cell(row=row, column=4, value=r["total"])
+        ws.cell(row=row, column=5, value=r["masculino"])
+        ws.cell(row=row, column=6, value=r["femenino"])
+        ws.cell(row=row, column=7, value=r["porcentaje"])
+        if i % 2 == 0:
+            for col in range(1, 8):
+                ws.cell(row=row, column=col).fill = alt
+
+    # Anchos de columna
+    anchos = [5, 14, 40, 10, 12, 12, 12]
+    for col, ancho in enumerate(anchos, start=1):
+        ws.column_dimensions[get_column_letter(col)].width = ancho
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
+    return response
+
+
+def exportar_snis_pdf(datos: dict) -> HttpResponse:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    periodo        = datos["periodo"]
+    nombre_archivo = f"reporte_snis_{periodo['fecha_desde']}_{periodo['fecha_hasta']}.pdf"
+    resumen        = datos["resumen"]
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=2 * cm,
+        bottomMargin=1.5 * cm,
+    )
+
+    estilos       = getSampleStyleSheet()
+    COLOR_HEADER  = colors.HexColor("#2E75B6")
+    COLOR_TITULO  = colors.HexColor("#1F4E79")
+    COLOR_FILA    = colors.HexColor("#EBF3FA")
+
+    estilo_titulo = ParagraphStyle(
+        "snis_titulo", parent=estilos["Title"],
+        fontSize=15, textColor=COLOR_TITULO, spaceAfter=4,
+    )
+    estilo_seccion = ParagraphStyle(
+        "snis_seccion", parent=estilos["Heading2"],
+        fontSize=11, textColor=COLOR_HEADER, spaceBefore=10, spaceAfter=4,
+    )
+    estilo_celda = ParagraphStyle("snis_celda", parent=estilos["Normal"], fontSize=8, leading=9.5)
+
+    def _p(valor):
+        return Paragraph(str(valor or ""), estilo_celda)
+
+    estilo_tabla = TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, 0),  COLOR_HEADER),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),  colors.white),
+        ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("FONTSIZE",      (0, 0), (-1, 0),  8.5),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, COLOR_FILA]),
+        ("FONTSIZE",      (0, 1), (-1, -1), 8),
+        ("GRID",          (0, 0), (-1, -1), 0.4, colors.HexColor("#CCCCCC")),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ])
+
+    elementos = []
+
+    elementos.append(Paragraph("Reporte SNIS — Morbilidad por Diagnóstico CIE-10", estilo_titulo))
+    elementos.append(Paragraph(
+        f"Establecimiento: Histolink &nbsp;|&nbsp; Período: {periodo['fecha_desde']} — {periodo['fecha_hasta']}",
+        estilos["Normal"],
+    ))
+    filtros = datos.get("filtros_aplicados", {})
+    partes_filtro = []
+    if filtros.get("codigo_cie10"):
+        partes_filtro.append(f"CIE-10: {filtros['codigo_cie10']}")
+    if filtros.get("sexo"):
+        partes_filtro.append(f"Sexo: {filtros['sexo']}")
+    if partes_filtro:
+        elementos.append(Paragraph("Filtros: " + " | ".join(partes_filtro), estilos["Normal"]))
+    elementos.append(Spacer(1, 0.4 * cm))
+
+    elementos.append(Paragraph("Resumen", estilo_seccion))
+    tabla_resumen = Table(
+        [
+            ["Indicador", "Valor"],
+            ["Total de casos registrados", resumen["total_casos"]],
+            ["Diagnósticos distintos (CIE-10)", resumen["total_diagnosticos_distintos"]],
+        ],
+        colWidths=[10 * cm, 4 * cm],
+    )
+    tabla_resumen.setStyle(estilo_tabla)
+    elementos.append(tabla_resumen)
+    elementos.append(Spacer(1, 0.5 * cm))
+
+    elementos.append(Paragraph("Morbilidad por Diagnóstico CIE-10", estilo_seccion))
+    headers = ["#", "Código CIE-10", "Descripción del diagnóstico", "Total", "Masc.", "Fem.", "% del total"]
+    filas = [headers]
+    for i, r in enumerate(datos["morbilidad"], start=1):
+        filas.append([
+            i,
+            _p(r["codigo"]),
+            _p(r["descripcion"]),
+            r["total"],
+            r["masculino"],
+            r["femenino"],
+            f"{r['porcentaje']}%",
+        ])
+    if len(filas) == 1:
+        filas.append(["—", "Sin registros para el período seleccionado", "", "", "", "", ""])
+
+    tabla_morb = Table(
+        filas,
+        colWidths=[1.0 * cm, 3.0 * cm, 13.0 * cm, 2.2 * cm, 2.2 * cm, 2.2 * cm, 2.8 * cm],
+        repeatRows=1,
+    )
+    tabla_morb.setStyle(estilo_tabla)
+    elementos.append(tabla_morb)
+
+    doc.build(elementos)
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
+    return response
