@@ -16,3 +16,5 @@ __pycache__/
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+# Credenciales Firebase (nunca subir al repo)
+kardex/firebase_credentials.json
