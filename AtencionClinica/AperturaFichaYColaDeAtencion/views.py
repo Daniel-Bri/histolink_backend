@@ -11,6 +11,9 @@ from .models import Ficha
 from .permissions import FichaPermission
 from .serializers import FichaEstadoSerializer, FichaSerializer
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class FichaPagination(PageNumberPagination):
     page_size             = 50
@@ -81,6 +84,32 @@ class FichaViewSet(viewsets.ModelViewSet):
                     qs = qs.filter(fecha_apertura__lte=dt)
 
         return qs.order_by("-fecha_apertura")
+
+    def perform_create(self, serializer):
+        ficha = serializer.save()
+        self._notificar_nueva_ficha(ficha)
+
+    def _notificar_nueva_ficha(self, ficha: Ficha):
+        try:
+            from Notificaciones.fcm_service import notificar_medicos_tenant
+            tenant = getattr(self.request, "tenant", None)
+            if tenant is None:
+                return
+            paciente = ficha.paciente
+            nombre_paciente = f"{paciente.nombres} {paciente.apellido_paterno}".strip()
+            notificar_medicos_tenant(
+                tenant_id=tenant.id,
+                titulo="Nueva ficha abierta",
+                cuerpo=f"Paciente: {nombre_paciente} — Ficha {ficha.correlativo}",
+                datos={
+                    "tipo": "nueva_ficha",
+                    "ficha_id": str(ficha.id),
+                    "paciente_id": str(paciente.id),
+                    "correlativo": ficha.correlativo or "",
+                },
+            )
+        except Exception:
+            logger.exception("[Ficha] Error al enviar notificación FCM de nueva ficha")
 
     def perform_destroy(self, instance: Ficha):
         """Borrado lógico opcional."""

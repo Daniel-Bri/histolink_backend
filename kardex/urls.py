@@ -86,6 +86,12 @@ urlpatterns = [
         "api/seguridad/break-glass/",
         include((breakglass_aprobacion_urls.urlpatterns, breakglass_aprobacion_urls.app_name), namespace="breakglass_aprobacion"),
     ),
+
+    # Notificaciones Push — FCM token registro/eliminación
+    path("api/notificaciones/", include("Notificaciones.urls")),
+
+    # SaaS Billing — suscripciones de clínicas
+    path("api/saas/", include("SaaSBilling.urls")),
 ]
 
 if settings.DEBUG:
