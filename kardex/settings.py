@@ -28,6 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+STRIPE_SECRET_KEY    = config("STRIPE_SECRET_KEY",    default="")
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
+FRONTEND_URL          = config("FRONTEND_URL",           default="http://localhost:5173")
+
 SECRET_KEY = config(
     "SECRET_KEY",
     default="django-insecure-$g26eq)8pmyp8b_yajdx(c-_cfmahvxa6#%0gcy#!by-=^5^ml",
@@ -89,6 +93,12 @@ INSTALLED_APPS = [
     "SeguridadAvanzadaYAdministracion.BackupRestore",
     # ── Auditoría ─────────────────────────────────────────────────────
     "SeguridadAvanzadaYAdministracion.Auditoria",
+    # ── Cobros ────────────────────────────────────────────────────────
+    "GestionDeCobros",
+    # ── Notificaciones Push (FCM) ─────────────────────────────────────
+    "Notificaciones",
+    # ── Facturación SaaS ──────────────────────────────────────────────
+    "SaaSBilling",
 ]
 
 MIDDLEWARE = [

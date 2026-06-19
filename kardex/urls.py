@@ -69,6 +69,15 @@ urlpatterns = [
     path('api/', include('AtencionClinica.FirmaDigitalDeConsulta.urls')),
     # SeguridadAvanzadaYAdministracion — CU16: Break-Glass Solicitud
     path("api/seguridad/break-glass/", include("SeguridadAvanzadaYAdministracion.BreakGlass_Solicitud.urls")),
+
+    # GestionDeCobros — cobros de servicios médicos con Stripe
+    path("api/cobros/", include("GestionDeCobros.urls")),
+
+    # Notificaciones Push — FCM token registro/eliminación
+    path("api/notificaciones/", include("Notificaciones.urls")),
+
+    # SaaS Billing — suscripciones de clínicas
+    path("api/saas/", include("SaaSBilling.urls")),
 ]
 
 if settings.DEBUG:
