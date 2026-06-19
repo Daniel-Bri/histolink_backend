@@ -58,5 +58,11 @@ reportlab==4.2.0
 # -- EMAIL API (reemplaza SMTP bloqueado por Railway) ----------------------
 django-anymail==12.0
 
+# -- PAGOS -----------------------------------------------------------------
+stripe==11.4.1
+
+# -- NOTIFICACIONES PUSH ---------------------------------------------------
+firebase-admin==6.6.0
+
 # -- SERVIDOR --------------------------------------------------------------
 gunicorn==21.2.0
