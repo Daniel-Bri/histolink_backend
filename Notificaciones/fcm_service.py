@@ -4,6 +4,7 @@ Notificaciones/fcm_service.py
 Servicio singleton para enviar notificaciones push via Firebase Cloud Messaging.
 Carga las credenciales una sola vez al startup.
 """
+import json
 import logging
 import os
 
@@ -20,18 +21,27 @@ def _get_app():
         import firebase_admin
         from firebase_admin import credentials
 
+        # Opción 1: variable de entorno FIREBASE_CREDENTIALS_JSON (Railway/producción)
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON", "").strip()
+        if cred_json:
+            cred = credentials.Certificate(json.loads(cred_json))
+            _app = firebase_admin.initialize_app(cred)
+            logger.info("[FCM] Firebase Admin SDK inicializado desde variable de entorno")
+            return _app
+
+        # Opción 2: archivo local (desarrollo)
         cred_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "kardex",
             "firebase_credentials.json",
         )
         if not os.path.exists(cred_path):
-            logger.warning("[FCM] Archivo de credenciales no encontrado en %s", cred_path)
+            logger.warning("[FCM] Credenciales no encontradas (ni env var ni archivo). Notificaciones desactivadas.")
             return None
 
         cred = credentials.Certificate(cred_path)
         _app = firebase_admin.initialize_app(cred)
-        logger.info("[FCM] Firebase Admin SDK inicializado correctamente")
+        logger.info("[FCM] Firebase Admin SDK inicializado desde archivo local")
     except Exception as exc:
         logger.exception("[FCM] Error al inicializar Firebase Admin SDK: %s", exc)
         _app = None
