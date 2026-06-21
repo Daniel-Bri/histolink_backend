@@ -87,6 +87,9 @@ urlpatterns = [
         include((breakglass_aprobacion_urls.urlpatterns, breakglass_aprobacion_urls.app_name), namespace="breakglass_aprobacion"),
     ),
 
+    # SeguridadAvanzadaYAdministracion — CU19: Gestión de Permisos del Paciente
+    path("api/permisos/", include("SeguridadAvanzadaYAdministracion.GestionDePermisosPaciente.urls")),
+
     # Notificaciones Push — FCM token registro/eliminación
     path("api/notificaciones/", include("Notificaciones.urls")),
 
