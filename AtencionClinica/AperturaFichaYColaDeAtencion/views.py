@@ -87,21 +87,6 @@ class FichaViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         ficha = serializer.save()
-<<<<<<< HEAD
-        tenant = getattr(self.request, "tenant", None)
-        if tenant:
-            try:
-                from Notificaciones.fcm_service import notificar_medicos_tenant
-                paciente = ficha.paciente
-                notificar_medicos_tenant(
-                    tenant_id=tenant.id,
-                    titulo="Nueva ficha en cola",
-                    cuerpo=f"Paciente {paciente.nombre} {paciente.apellido_paterno} está esperando atención.",
-                    datos={"ficha_id": str(ficha.id), "paciente_id": str(paciente.id)},
-                )
-            except Exception:
-                pass
-=======
         self._notificar_nueva_ficha(ficha)
 
     def _notificar_nueva_ficha(self, ficha: Ficha):
@@ -125,7 +110,6 @@ class FichaViewSet(viewsets.ModelViewSet):
             )
         except Exception:
             logger.exception("[Ficha] Error al enviar notificación FCM de nueva ficha")
->>>>>>> origin/main
 
     def perform_destroy(self, instance: Ficha):
         """Borrado lógico opcional."""

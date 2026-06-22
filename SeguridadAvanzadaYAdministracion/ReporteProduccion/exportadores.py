@@ -604,30 +604,6 @@ def exportar_pdf(datos: dict) -> HttpResponse:
     return response
 
 
-<<<<<<< HEAD
-# ── Exportadores SNIS (morbilidad CIE-10) ────────────────────────────────────
-
-def exportar_snis_csv(datos: dict) -> HttpResponse:
-    desde  = datos["periodo"]["desde"]
-    hasta  = datos["periodo"]["hasta"]
-    nombre = f"reporte_snis_{desde}_{hasta}.csv"
-
-    response = HttpResponse(content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = f'attachment; filename="{nombre}"'
-    response.write("﻿")  # BOM UTF-8
-
-    writer = csv.writer(response, delimiter=";")
-    writer.writerow(["REPORTE DE MORBILIDAD SNIS — Histolink"])
-    writer.writerow([f"Periodo: {desde} al {hasta}"])
-    writer.writerow([])
-    writer.writerow(["#", "Código CIE-10", "Descripción", "Total", "Masculino", "Femenino", "Otros"])
-    for r in datos["morbilidad"]:
-        writer.writerow([r["posicion"], r["codigo"], r["descripcion"], r["total"], r["masculino"], r["femenino"], r["otros"]])
-    writer.writerow([])
-    res = datos["resumen"]
-    writer.writerow(["Total casos", res["total_casos"]])
-    writer.writerow(["Diagnósticos distintos", res["total_diagnosticos_distintos"]])
-=======
 # ── SNIS — exportadores específicos ──────────────────────────────────────────
 
 def exportar_snis_csv(datos: dict) -> HttpResponse:
@@ -664,58 +640,10 @@ def exportar_snis_csv(datos: dict) -> HttpResponse:
             r["femenino"],
             f"{r['porcentaje']}%",
         ])
->>>>>>> origin/main
     return response
 
 
 def exportar_snis_excel(datos: dict) -> HttpResponse:
-<<<<<<< HEAD
-    try:
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-    except ImportError:
-        return HttpResponse("openpyxl no instalado.", status=500)
-
-    desde  = datos["periodo"]["desde"]
-    hasta  = datos["periodo"]["hasta"]
-    nombre = f"reporte_snis_{desde}_{hasta}.xlsx"
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Morbilidad SNIS"
-
-    azul_oscuro = "1F4E79"
-    azul_medio  = "2E75B6"
-    azul_claro  = "EBF3FA"
-
-    # Título
-    ws.merge_cells("A1:G1")
-    ws["A1"] = f"REPORTE DE MORBILIDAD SNIS — {desde} al {hasta}"
-    ws["A1"].font      = Font(bold=True, color="FFFFFF", size=13)
-    ws["A1"].fill      = PatternFill("solid", fgColor=azul_oscuro)
-    ws["A1"].alignment = Alignment(horizontal="center")
-    ws.row_dimensions[1].height = 22
-
-    # Encabezados
-    encabezados = ["#", "Código CIE-10", "Descripción", "Total", "Masculino", "Femenino", "Otros"]
-    for col, h in enumerate(encabezados, 1):
-        celda = ws.cell(row=2, column=col, value=h)
-        celda.font      = Font(bold=True, color="FFFFFF")
-        celda.fill      = PatternFill("solid", fgColor=azul_medio)
-        celda.alignment = Alignment(horizontal="center")
-
-    # Datos
-    for i, r in enumerate(datos["morbilidad"], 3):
-        fila = [r["posicion"], r["codigo"], r["descripcion"], r["total"], r["masculino"], r["femenino"], r["otros"]]
-        for col, val in enumerate(fila, 1):
-            celda = ws.cell(row=i, column=col, value=val)
-            if i % 2 == 0:
-                celda.fill = PatternFill("solid", fgColor=azul_claro)
-
-    # Anchos
-    for col, ancho in zip("ABCDEFG", [5, 14, 40, 10, 12, 12, 12]):
-        ws.column_dimensions[col].width = ancho
-=======
     import openpyxl
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
@@ -783,74 +711,19 @@ def exportar_snis_excel(datos: dict) -> HttpResponse:
     anchos = [5, 14, 40, 10, 12, 12, 12]
     for col, ancho in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(col)].width = ancho
->>>>>>> origin/main
 
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
-<<<<<<< HEAD
-    response = HttpResponse(buffer.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response["Content-Disposition"] = f'attachment; filename="{nombre}"'
-=======
     response = HttpResponse(
         buffer.read(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
->>>>>>> origin/main
     return response
 
 
 def exportar_snis_pdf(datos: dict) -> HttpResponse:
-<<<<<<< HEAD
-    try:
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib import colors
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import cm
-    except ImportError:
-        return HttpResponse("reportlab no instalado.", status=500)
-
-    desde  = datos["periodo"]["desde"]
-    hasta  = datos["periodo"]["hasta"]
-    nombre = f"reporte_snis_{desde}_{hasta}.pdf"
-
-    buffer = io.BytesIO()
-    doc    = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
-    estilos = getSampleStyleSheet()
-    elementos = []
-
-    elementos.append(Paragraph(f"<b>REPORTE DE MORBILIDAD SNIS</b>", estilos["Title"]))
-    elementos.append(Paragraph(f"Periodo: {desde} al {hasta}", estilos["Normal"]))
-    res = datos["resumen"]
-    elementos.append(Paragraph(f"Total casos: {res['total_casos']} | Diagnósticos distintos: {res['total_diagnosticos_distintos']}", estilos["Normal"]))
-    elementos.append(Spacer(1, 0.4*cm))
-
-    azul_t = colors.HexColor("#1F4E79")
-    azul_h = colors.HexColor("#2E75B6")
-    azul_c = colors.HexColor("#EBF3FA")
-
-    cab  = ["#", "Código CIE-10", "Descripción", "Total", "Masculino", "Femenino", "Otros"]
-    body = [cab]
-    for r in datos["morbilidad"]:
-        body.append([r["posicion"], r["codigo"], r["descripcion"] or "—", r["total"], r["masculino"], r["femenino"], r["otros"]])
-
-    col_widths = [1.0*cm, 3.0*cm, 13.0*cm, 2.2*cm, 2.2*cm, 2.2*cm, 2.8*cm]
-    tabla = Table(body, colWidths=col_widths, repeatRows=1)
-    tabla.setStyle(TableStyle([
-        ("BACKGROUND",  (0,0), (-1,0), azul_h),
-        ("TEXTCOLOR",   (0,0), (-1,0), colors.white),
-        ("FONTNAME",    (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE",    (0,0), (-1,0), 9),
-        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, azul_c]),
-        ("FONTSIZE",    (0,1), (-1,-1), 8),
-        ("GRID",        (0,0), (-1,-1), 0.4, colors.HexColor("#CBD5E1")),
-        ("VALIGN",      (0,0), (-1,-1), "MIDDLE"),
-        ("ALIGN",       (3,0), (-1,-1), "CENTER"),
-    ]))
-    elementos.append(tabla)
-=======
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -955,14 +828,9 @@ def exportar_snis_pdf(datos: dict) -> HttpResponse:
     )
     tabla_morb.setStyle(estilo_tabla)
     elementos.append(tabla_morb)
->>>>>>> origin/main
 
     doc.build(elementos)
     buffer.seek(0)
     response = HttpResponse(buffer.read(), content_type="application/pdf")
-<<<<<<< HEAD
-    response["Content-Disposition"] = f'attachment; filename="{nombre}"'
-=======
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
->>>>>>> origin/main
     return response
