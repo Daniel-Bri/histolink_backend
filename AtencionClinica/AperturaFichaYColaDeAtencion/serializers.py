@@ -49,7 +49,7 @@ class ProfesionalFichaBriefSerializer(serializers.ModelSerializer):
         fields = ("id", "nombre")
 
     def get_nombre(self, obj: PersonalSalud) -> str:
-        u: User = obj.user
+        u = obj.user
         full = (u.get_full_name() or "").strip()
         return full if full else u.get_username()
 
