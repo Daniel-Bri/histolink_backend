@@ -10,11 +10,13 @@ __pycache__/
 # Variables de entorno (credenciales)
 .env
 
-# Base de datos (si usas local)
+# Base de datos
 *.sqlite3
 
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+desktop.ini
+
 # Credenciales Firebase (nunca subir al repo)
 kardex/firebase_credentials.json

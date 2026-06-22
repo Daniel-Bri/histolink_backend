@@ -80,6 +80,10 @@ class OrdenEstudioViewSet(viewsets.ModelViewSet):
         cid = p.get("consulta")
         if cid:
             qs = qs.filter(consulta_id=cid)
+        
+        fid = p.get("ficha")
+        if fid:
+            qs = qs.filter(consulta__ficha_id=fid)
 
         if p.get("pendientes", "").lower() in ("1", "true", "yes"):
             qs = qs.exclude(

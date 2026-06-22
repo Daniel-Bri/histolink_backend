@@ -18,30 +18,21 @@ def _get_app():
     if _app is not None:
         return _app
     try:
-        import firebase_admin
-        from firebase_admin import credentials
+        import firebase_admin # type: ignore
+        from firebase_admin import credentials # type: ignore
 
-        # Opción 1: variable de entorno FIREBASE_CREDENTIALS_JSON (Railway/producción)
-        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON", "").strip()
-        if cred_json:
-            cred = credentials.Certificate(json.loads(cred_json))
-            _app = firebase_admin.initialize_app(cred)
-            logger.info("[FCM] Firebase Admin SDK inicializado desde variable de entorno")
-            return _app
-
-        # Opción 2: archivo local (desarrollo)
         cred_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "kardex",
             "firebase_credentials.json",
         )
         if not os.path.exists(cred_path):
-            logger.warning("[FCM] Credenciales no encontradas (ni env var ni archivo). Notificaciones desactivadas.")
+            logger.warning("[FCM] Archivo de credenciales no encontrado en %s", cred_path)
             return None
 
         cred = credentials.Certificate(cred_path)
         _app = firebase_admin.initialize_app(cred)
-        logger.info("[FCM] Firebase Admin SDK inicializado desde archivo local")
+        logger.info("[FCM] Firebase Admin SDK inicializado correctamente")
     except Exception as exc:
         logger.exception("[FCM] Error al inicializar Firebase Admin SDK: %s", exc)
         _app = None
@@ -63,7 +54,7 @@ def enviar_notificacion(tokens: list[str], titulo: str, cuerpo: str, datos: dict
         return 0
 
     try:
-        from firebase_admin import messaging
+        from firebase_admin import messaging # type: ignore
 
         messages = [
             messaging.Message(
