@@ -19,7 +19,9 @@ from django.utils.text import slugify
 
 from AtencionClinica.AperturaFichaYColaDeAtencion.models import Ficha
 from AtencionClinica.ConsultaMedicaSOAP.models import Consulta
+from AtencionClinica.EmisionDeRecetaMedica.models import DetalleReceta, Receta
 from AtencionClinica.RegistroDeTriaje.models import Triaje
+from AtencionClinica.SolicitudDeEstudios.models import OrdenEstudio
 from GestionDeUsuarios.EdicionDeAntecedentesMedicos.models import Antecedente
 from GestionDeUsuarios.GestionDePersonalDeSalud.models import Especialidad, PersonalSalud
 from GestionDeUsuarios.RegistroYBusquedaDePacientes.models import Paciente
@@ -1118,6 +1120,453 @@ CLINICAS = [
 
 
 # ---------------------------------------------------------------------------
+# PACIENTES ADICIONALES — Hospital Universitario San Pablo
+#
+# Ademas de los 6 pacientes "ancla" definidos arriba, se generan 24 pacientes
+# mas (12 perfiles clinicos x 2 variantes) para que el tenant San Pablo tenga
+# un expediente mas grande y variado: HTA, diabetes, gastritis, lumbalgia,
+# IVU, faringoamigdalitis, asma, dermatitis, ansiedad, artrosis, anemia y
+# gastroenteritis. Cada uno incluye antecedentes, triaje y consulta SOAP;
+# la mayoria tambien incluye receta medica y/o orden de estudio.
+# ---------------------------------------------------------------------------
+
+def _paciente_extra(
+    ci, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, sexo,
+    telefono, direccion, tipo_seguro, numero_asegurado,
+    autoidentificacion, antecedentes, triaje, consulta,
+    receta=None, orden_estudio=None,
+):
+    consulta = dict(consulta)
+    if receta:
+        consulta["receta"] = receta
+    if orden_estudio:
+        consulta["orden_estudio"] = orden_estudio
+    return {
+        "ci": ci, "ci_complemento": "",
+        "nombres": nombres, "apellido_paterno": apellido_paterno, "apellido_materno": apellido_materno,
+        "fecha_nacimiento": fecha_nacimiento, "sexo": sexo,
+        "autoidentificacion": autoidentificacion, "telefono": telefono,
+        "direccion": direccion,
+        "tipo_seguro": tipo_seguro, "numero_asegurado": numero_asegurado,
+        "antecedentes": antecedentes,
+        "triajes": [triaje],
+        "consultas": [consulta],
+    }
+
+
+_PACIENTES_EXTRA_SAN_PABLO = [
+    _paciente_extra(
+        "3001007", "Mario", "Gutierrez", "Choque", date(1958, 2, 14), "M",
+        "71235001", "Calle Sagarnaga 220, La Paz", "CNS", "CNS-SP-007", "MESTIZO",
+        {
+            "grupo_sanguineo": "O+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Hipertension arterial esencial desde 2014",
+            "ant_no_patologicos": "No fuma. Alcohol social ocasional.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Padre hipertenso.",
+            "ant_gineco_obstetricos": "",
+            "medicacion_actual": "Losartan 50mg c/dia", "esquema_vacunacion": "Influenza (2024).",
+        },
+        {"peso_kg": "80.0", "talla_cm": "168.0", "frecuencia_cardiaca": 84, "frecuencia_respiratoria": 18,
+         "presion_sistolica": 156, "presion_diastolica": 96, "temperatura_celsius": "36.5", "saturacion_oxigeno": 97,
+         "escala_dolor": 1, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Control rutinario de presion arterial. Refiere haber olvidado dosis 2 veces esta semana.",
+         "observaciones": "PA elevada respecto a control previo. Sin sintomas de alarma."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Control de HTA esencial con cifras elevadas.",
+         "historia_enfermedad_actual": "Paciente de 68 anos hipertenso conocido, en tratamiento con Losartan 50mg, acude a control rutinario. Refiere adherencia irregular en la ultima semana por olvidos. Asintomatico, sin cefalea ni vision borrosa.",
+         "examen_fisico": "PA: 156/96 mmHg. FC: 84 lpm. Resto del examen sin alteraciones.",
+         "impresion_diagnostica": "Hipertension arterial esencial no controlada por baja adherencia.",
+         "codigo_cie10_principal": "I10", "descripcion_cie10": "Hipertension esencial (primaria)",
+         "plan_tratamiento": "1. Intensificar Losartan a 100mg c/dia\n2. Reforzar adherencia con alarmas/pastillero\n3. Control en 1 mes",
+         "indicaciones_alta": "No omitir medicacion. Reducir sal. Control en 4 semanas.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Losartan", "concentracion": "100mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "una vez al dia", "duracion": "30 dias", "cantidad_total": "30 tabletas",
+             "instrucciones": "Tomar siempre a la misma hora."},
+        ],
+        orden_estudio={"tipo": "LAB", "descripcion": "Perfil renal y electrolitos",
+                       "indicacion_clinica": "Control de funcion renal en paciente hipertenso bajo tratamiento con ARA-II."},
+    ),
+    _paciente_extra(
+        "3001008", "Claudia", "Apaza", "Calle", date(1962, 6, 30), "F",
+        "71235002", "Av. Buenos Aires 410, La Paz", "SUS", "", "AYMARA",
+        {
+            "grupo_sanguineo": "A-", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Hipertension arterial desde 2019. Sobrepeso.",
+            "ant_no_patologicos": "Sedentaria. Dieta rica en carbohidratos.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Madre hipertensa, hermana diabetica.",
+            "ant_gineco_obstetricos": "G2P2A0C0. Menopausia a los 50 anos.",
+            "medicacion_actual": "Enalapril 10mg c/12h", "esquema_vacunacion": "Influenza (2023).",
+        },
+        {"peso_kg": "76.0", "talla_cm": "158.0", "frecuencia_cardiaca": 90, "frecuencia_respiratoria": 19,
+         "presion_sistolica": 168, "presion_diastolica": 102, "temperatura_celsius": "36.6", "saturacion_oxigeno": 96,
+         "escala_dolor": 4, "nivel_urgencia": "NARANJA",
+         "motivo_consulta_triaje": "Cefalea frontal con cifras tensionales muy elevadas en domicilio.",
+         "observaciones": "Crisis hipertensiva no complicada. Sin signos neurologicos focales."},
+        {"estado": "FIRMADA", "motivo_consulta": "Crisis hipertensiva con cefalea.",
+         "historia_enfermedad_actual": "Mujer de 63 anos hipertensa con mal control acude por cefalea frontal opresiva de 4h, sin nauseas ni alteracion visual. PA en casa 170/100. Refiere abandono parcial de dieta hiposodica.",
+         "examen_fisico": "PA: 168/102 mmHg. FC: 90 lpm. Sin focalidad neurologica. Fondo de ojo no realizado.",
+         "impresion_diagnostica": "Urgencia hipertensiva sin dano de organo blanco evidente.",
+         "codigo_cie10_principal": "I10", "descripcion_cie10": "Hipertension esencial (primaria)",
+         "plan_tratamiento": "1. Captopril 25mg SL STAT\n2. Reposo en observacion 1h y recontrol de PA\n3. Ajustar Enalapril a 20mg c/12h\n4. Reforzar dieta hiposodica",
+         "indicaciones_alta": "Control en 48h. Acudir de inmediato si cefalea intensa subita, vision doble o debilidad.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Enalapril", "concentracion": "20mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 12 horas", "duracion": "30 dias", "cantidad_total": "60 tabletas",
+             "instrucciones": "No suspender sin indicacion medica."},
+        ],
+    ),
+    _paciente_extra(
+        "3001009", "Eduardo", "Rocha", "Ramos", date(1970, 11, 9), "M",
+        "71235003", "Calle Yanacocha 88, La Paz", "PRIVADO", "PRIV-SP-009", "MESTIZO",
+        {
+            "grupo_sanguineo": "B+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Diabetes tipo 2 desde 2017", "ant_no_patologicos": "No fuma. Alcohol ocasional.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Padre y hermano diabeticos.",
+            "ant_gineco_obstetricos": "",
+            "medicacion_actual": "Metformina 850mg c/12h", "esquema_vacunacion": "Influenza (2024). Hepatitis B completo.",
+        },
+        {"peso_kg": "92.0", "talla_cm": "172.0", "frecuencia_cardiaca": 78, "frecuencia_respiratoria": 17,
+         "presion_sistolica": 132, "presion_diastolica": 84, "temperatura_celsius": "36.4", "saturacion_oxigeno": 98,
+         "escala_dolor": 0, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Control trimestral de diabetes. Trae glucemias capilares de la semana.",
+         "observaciones": "Asintomatico. Trae bitacora de glucemias entre 140-190 mg/dL."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Control trimestral de diabetes tipo 2.",
+         "historia_enfermedad_actual": "Paciente de 55 anos con DM2 de 7 anos de evolucion, en tratamiento con Metformina. Bitacora de glucemias capilares matutinas entre 140-190 mg/dL en la ultima semana. Reconoce dieta irregular por trabajo.",
+         "examen_fisico": "Peso 92kg, IMC 31.1. PA 132/84 mmHg. Pies sin lesiones, sensibilidad conservada. Sin signos de retinopatia evidente al examen.",
+         "impresion_diagnostica": "Diabetes mellitus tipo 2 con control glucemico subóptimo. Obesidad grado 1.",
+         "codigo_cie10_principal": "E11.9", "descripcion_cie10": "Diabetes mellitus tipo 2, sin complicaciones",
+         "plan_tratamiento": "1. Intensificar Metformina a 1000mg c/12h\n2. Reforzar plan alimentario con nutricion\n3. Solicitar HbA1c y perfil lipidico\n4. Control en 3 meses",
+         "indicaciones_alta": "Mantener actividad fisica 30 min/dia. Control en 3 meses con laboratorios.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Metformina", "concentracion": "1000mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 12 horas", "duracion": "90 dias", "cantidad_total": "180 tabletas",
+             "instrucciones": "Tomar con las comidas para reducir molestias digestivas."},
+        ],
+        orden_estudio={"tipo": "LAB", "descripcion": "Hemoglobina glicosilada (HbA1c) y perfil lipidico",
+                       "indicacion_clinica": "Evaluacion de control metabolico en diabetes tipo 2 de larga evolucion."},
+    ),
+    _paciente_extra(
+        "3001010", "Ximena", "Subieta", "Velasquez", date(1985, 4, 22), "F",
+        "71235004", "Av. Ecuador 150, La Paz", "COSSMIL", "COS-SP-010", "MESTIZO",
+        {
+            "grupo_sanguineo": "AB+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Diabetes tipo 2 desde 2023", "ant_no_patologicos": "Sedentaria.",
+            "ant_quirurgicos": "Cesarea (2015)", "ant_familiares": "Madre diabetica.",
+            "ant_gineco_obstetricos": "G1P1A0C1.",
+            "medicacion_actual": "Metformina 500mg c/12h", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "70.0", "talla_cm": "160.0", "frecuencia_cardiaca": 80, "frecuencia_respiratoria": 18,
+         "presion_sistolica": 118, "presion_diastolica": 76, "temperatura_celsius": "36.5", "saturacion_oxigeno": 98,
+         "escala_dolor": 0, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Primer control tras diagnostico reciente de diabetes tipo 2.",
+         "observaciones": "Paciente asintomatica. Educacion diabetologica pendiente."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Primer control de diabetes tipo 2 de reciente diagnostico.",
+         "historia_enfermedad_actual": "Mujer de 40 anos diagnosticada hace 1 mes con DM2 tras hallazgo incidental de glucemia 210 mg/dL. Inicio Metformina 500mg c/12h con buena tolerancia. Asintomatica.",
+         "examen_fisico": "Peso 70kg, IMC 27.3. PA 118/76 mmHg. Sin hallazgos relevantes.",
+         "impresion_diagnostica": "Diabetes mellitus tipo 2 de reciente diagnostico.",
+         "codigo_cie10_principal": "E11.9", "descripcion_cie10": "Diabetes mellitus tipo 2, sin complicaciones",
+         "plan_tratamiento": "1. Mantener Metformina 500mg c/12h, evaluar incremento en 2 semanas\n2. Derivar a nutricion\n3. Educacion en automonitoreo glucemico\n4. Control en 1 mes con glucemia en ayunas",
+         "indicaciones_alta": "Automonitoreo glucemico 2 veces por semana. Dieta baja en azucares simples.", "requiere_derivacion": False},
+    ),
+    _paciente_extra(
+        "3001011", "Ruben", "Zambrana", "Coro", date(1990, 9, 17), "M",
+        "71235005", "Calle Junin 305, La Paz", "SUS", "", "MESTIZO",
+        {
+            "grupo_sanguineo": "O+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Gastritis cronica recurrente", "ant_no_patologicos": "Consumo frecuente de cafe y comida picante.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Sin antecedentes relevantes.",
+            "ant_gineco_obstetricos": "", "medicacion_actual": "Ninguna regular.", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "74.0", "talla_cm": "173.0", "frecuencia_cardiaca": 86, "frecuencia_respiratoria": 18,
+         "presion_sistolica": 122, "presion_diastolica": 78, "temperatura_celsius": "36.6", "saturacion_oxigeno": 98,
+         "escala_dolor": 6, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Dolor epigastrico tipo ardor de 2 dias, relacionado con las comidas.",
+         "observaciones": "Sin signos de alarma digestiva (no melena, no hematemesis)."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Dolor epigastrico tipo ardor de 2 dias de evolucion.",
+         "historia_enfermedad_actual": "Varon de 35 anos con gastritis recurrente acude por dolor epigastrico tipo ardor 6/10, que aumenta con las comidas, de 2 dias de evolucion. Refiere consumo elevado de cafe y comida picante en la ultima semana por estres laboral. Niega melena o vomitos con sangre.",
+         "examen_fisico": "Abdomen blando, depresible, dolor a la palpacion en epigastrio sin signos de irritacion peritoneal. Sin masas palpables.",
+         "impresion_diagnostica": "Gastritis aguda reagudizada sobre gastritis cronica.",
+         "codigo_cie10_principal": "K29.7", "descripcion_cie10": "Gastritis, no especificada",
+         "plan_tratamiento": "1. Omeprazol 20mg en ayunas por 14 dias\n2. Suspender cafe, picantes e irritantes\n3. Fraccionar comidas\n4. Reconsultar si aparece melena o vomito con sangre",
+         "indicaciones_alta": "Evitar irritantes gastricos. Completar tratamiento 14 dias.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Omeprazol", "concentracion": "20mg", "forma_farmaceutica": "capsula", "via_administracion": "VO",
+             "dosis": "1 capsula", "frecuencia": "una vez al dia en ayunas", "duracion": "14 dias", "cantidad_total": "14 capsulas",
+             "instrucciones": "Tomar 30 minutos antes del desayuno."},
+        ],
+    ),
+    _paciente_extra(
+        "3001012", "Daniela", "Velasquez", "Mamani", date(1996, 1, 28), "F",
+        "71235006", "Av. Tejada Sorzano 12, La Paz", "CNS", "CNS-SP-012", "MESTIZO",
+        {
+            "grupo_sanguineo": "A+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Sin antecedentes patologicos previos", "ant_no_patologicos": "No fuma, no alcohol.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Sin antecedentes relevantes.",
+            "ant_gineco_obstetricos": "G0P0A0C0. FUM hace 2 semanas. MAC: ninguno.",
+            "medicacion_actual": "Ninguna", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "58.0", "talla_cm": "163.0", "frecuencia_cardiaca": 88, "frecuencia_respiratoria": 19,
+         "presion_sistolica": 116, "presion_diastolica": 74, "temperatura_celsius": "36.7", "saturacion_oxigeno": 99,
+         "escala_dolor": 7, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Dolor lumbar intenso tras cargar peso en el trabajo hace 2 dias.",
+         "observaciones": "Sin signos de compromiso neurologico. Dolor mecanico."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Lumbalgia mecanica de 2 dias de evolucion.",
+         "historia_enfermedad_actual": "Mujer de 30 anos sin antecedentes acude por dolor lumbar 7/10 de inicio brusco tras cargar peso en el trabajo hace 2 dias, sin irradiacion a miembros inferiores, sin parestesias ni alteracion de esfinteres.",
+         "examen_fisico": "Contractura paravertebral lumbar bilateral. Lasegue negativo. Sin deficit motor ni sensitivo. Reflejos osteotendinosos conservados.",
+         "impresion_diagnostica": "Lumbalgia mecanica aguda sin signos de alarma.",
+         "codigo_cie10_principal": "M54.5", "descripcion_cie10": "Dolor lumbar bajo",
+         "plan_tratamiento": "1. Ibuprofeno 400mg c/8h por 5 dias\n2. Paracetamol 1g c/8h SOS dolor\n3. Reposo relativo, evitar cargar peso\n4. Calor local",
+         "indicaciones_alta": "Evitar cargar peso por 1 semana. Reconsultar si aparece debilidad en piernas o perdida de control de esfinteres.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Ibuprofeno", "concentracion": "400mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 8 horas", "duracion": "5 dias", "cantidad_total": "15 tabletas",
+             "instrucciones": "Tomar despues de alimentos.", "orden": 1},
+            {"medicamento": "Paracetamol", "concentracion": "1g", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 8 horas segun dolor", "duracion": "5 dias", "cantidad_total": "10 tabletas",
+             "instrucciones": "No combinar con otros antiinflamatorios sin indicacion."},
+        ],
+        orden_estudio={"tipo": "RX", "descripcion": "Radiografia de columna lumbosacra AP y lateral",
+                       "indicacion_clinica": "Lumbalgia mecanica de inicio agudo post esfuerzo, descartar compromiso oseo."},
+    ),
+    _paciente_extra(
+        "3001013", "Hugo", "Heredia", "Montano", date(1980, 5, 3), "M",
+        "71235007", "Calle Comercio 77, La Paz", "SUS", "", "MESTIZO",
+        {
+            "grupo_sanguineo": "O-", "alergias": "Sulfas (rash cutaneo)",
+            "ant_patologicos": "Litiasis renal previa (2019)", "ant_no_patologicos": "Poca ingesta de agua. No fuma.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Padre con litiasis renal.",
+            "ant_gineco_obstetricos": "", "medicacion_actual": "Ninguna regular.", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "82.0", "talla_cm": "175.0", "frecuencia_cardiaca": 98, "frecuencia_respiratoria": 20,
+         "presion_sistolica": 128, "presion_diastolica": 82, "temperatura_celsius": "37.6", "saturacion_oxigeno": 97,
+         "escala_dolor": 5, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Dolor al orinar y ardor desde hace 3 dias, fiebre leve.",
+         "observaciones": "Sospecha de infeccion urinaria. Puno percusion renal negativa."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Disuria y ardor miccional de 3 dias con fiebre leve.",
+         "historia_enfermedad_actual": "Varon de 45 anos con antecedente de litiasis renal acude por disuria, polaquiuria y ardor miccional de 3 dias, asociado a febricula de 37.6C. Niega dolor lumbar intenso ni hematuria macroscopica.",
+         "examen_fisico": "T: 37.6C. Puno percusion renal bilateral negativa. Abdomen blando sin dolor suprapubico significativo.",
+         "impresion_diagnostica": "Infeccion del tracto urinario bajo no complicada.",
+         "codigo_cie10_principal": "N39.0", "descripcion_cie10": "Infeccion de vias urinarias, sitio no especificado",
+         "plan_tratamiento": "1. Nitrofurantoina 100mg c/12h por 7 dias\n2. Aumentar ingesta de agua\n3. Solicitar urocultivo antes de iniciar antibiotico si es posible\n4. Reconsultar si aparece dolor lumbar intenso o fiebre alta (sospecha de pielonefritis)",
+         "indicaciones_alta": "Completar antibiotico 7 dias. Aumentar ingesta hidrica. Reconsultar si fiebre alta o dolor lumbar.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Nitrofurantoina", "concentracion": "100mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 12 horas", "duracion": "7 dias", "cantidad_total": "14 tabletas",
+             "instrucciones": "Tomar con alimentos para reducir molestias gastricas."},
+        ],
+        orden_estudio={"tipo": "LAB", "descripcion": "Urocultivo y examen general de orina",
+                       "indicacion_clinica": "Confirmacion etiologica de infeccion urinaria antes de definir antibiotico definitivo."},
+    ),
+    _paciente_extra(
+        "3001014", "Sandra", "Siles", "Ortiz", date(1999, 12, 6), "F",
+        "71235008", "Av. Busch 540, La Paz", "PRIVADO", "PRIV-SP-014", "MESTIZO",
+        {
+            "grupo_sanguineo": "B+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Faringoamigdalitis recurrente", "ant_no_patologicos": "Estudiante universitaria.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Sin antecedentes relevantes.",
+            "ant_gineco_obstetricos": "G0P0A0C0.", "medicacion_actual": "Ninguna", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "55.0", "talla_cm": "159.0", "frecuencia_cardiaca": 92, "frecuencia_respiratoria": 20,
+         "presion_sistolica": 110, "presion_diastolica": 70, "temperatura_celsius": "38.4", "saturacion_oxigeno": 98,
+         "escala_dolor": 6, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Dolor de garganta intenso, fiebre y dificultad para tragar desde hace 2 dias.",
+         "observaciones": "Amigdalas hiperemicas con exudado. Adenopatias cervicales dolorosas."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Odinofagia intensa con fiebre de 2 dias de evolucion.",
+         "historia_enfermedad_actual": "Mujer de 26 anos con cuadro de odinofagia intensa, fiebre de 38.4C y disfagia leve de 2 dias de evolucion. Niega tos ni rinorrea significativa.",
+         "examen_fisico": "T: 38.4C. Amigdalas hipertroficas grado II con exudado blanquecino bilateral. Adenopatias cervicales anteriores dolorosas.",
+         "impresion_diagnostica": "Faringoamigdalitis aguda, probable etiologia bacteriana (criterios de Centor compatibles).",
+         "codigo_cie10_principal": "J03.9", "descripcion_cie10": "Amigdalitis aguda, no especificada",
+         "plan_tratamiento": "1. Amoxicilina 500mg c/8h por 7 dias\n2. Paracetamol 1g c/8h SOS fiebre o dolor\n3. Gargaras con agua tibia y sal\n4. Reposo e hidratacion abundante",
+         "indicaciones_alta": "Completar antibiotico aunque mejoren los sintomas. Reconsultar si dificultad respiratoria o empeoramiento.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Amoxicilina", "concentracion": "500mg", "forma_farmaceutica": "capsula", "via_administracion": "VO",
+             "dosis": "1 capsula", "frecuencia": "cada 8 horas", "duracion": "7 dias", "cantidad_total": "21 capsulas",
+             "instrucciones": "Completar el tratamiento completo."},
+        ],
+    ),
+    _paciente_extra(
+        "3001015", "Ivan", "Limachi", "Yujra", date(1992, 8, 19), "M",
+        "71235009", "Villa Fatima, Calle 4 #56, La Paz", "SUS", "", "AYMARA",
+        {
+            "grupo_sanguineo": "O+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Asma bronquial desde la infancia", "ant_no_patologicos": "No fuma. Expuesto a polvo en su trabajo.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Madre asmatica.",
+            "ant_gineco_obstetricos": "", "medicacion_actual": "Salbutamol inhalador SOS", "esquema_vacunacion": "Influenza (2024).",
+        },
+        {"peso_kg": "68.0", "talla_cm": "170.0", "frecuencia_cardiaca": 104, "frecuencia_respiratoria": 26,
+         "presion_sistolica": 124, "presion_diastolica": 80, "temperatura_celsius": "36.5", "saturacion_oxigeno": 93,
+         "escala_dolor": 3, "nivel_urgencia": "NARANJA",
+         "motivo_consulta_triaje": "Dificultad para respirar y sibilancias desde hace 6 horas tras exposicion a polvo.",
+         "observaciones": "SpO2 93%. Sibilancias audibles. Uso de salbutamol sin alivio completo."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Crisis asmatica moderada por exposicion a polvo.",
+         "historia_enfermedad_actual": "Varon de 33 anos asmatico conocido acude por disnea y sibilancias de 6h de evolucion tras exposicion laboral a polvo, con uso de salbutamol sin alivio completo. Niega fiebre.",
+         "examen_fisico": "FR: 26 rpm. SpO2: 93%. Sibilancias espiratorias difusas bilaterales. Tiraje leve intercostal.",
+         "impresion_diagnostica": "Crisis asmatica moderada desencadenada por irritante ambiental.",
+         "codigo_cie10_principal": "J45.9", "descripcion_cie10": "Asma, no especificada",
+         "plan_tratamiento": "1. Salbutamol 4 puff c/20min por 1h en nebulizacion/camara espaciadora\n2. Prednisona 40mg VO STAT\n3. O2 suplementario si SpO2 < 94%\n4. Reevaluar en 1h\n5. Iniciar corticoide inhalado de mantenimiento (Budesonida)",
+         "indicaciones_alta": "Evitar exposicion a polvo, usar mascarilla en el trabajo. Completar prednisona 5 dias. Acudir de urgencia si disnea severa.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Budesonida", "concentracion": "200mcg/dosis", "forma_farmaceutica": "inhalador", "via_administracion": "INH",
+             "dosis": "2 puff", "frecuencia": "cada 12 horas", "duracion": "uso continuo", "cantidad_total": "1 inhalador",
+             "instrucciones": "Enjuagar la boca despues de cada uso.", "orden": 1},
+            {"medicamento": "Prednisona", "concentracion": "20mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "2 tabletas", "frecuencia": "una vez al dia", "duracion": "5 dias", "cantidad_total": "10 tabletas",
+             "instrucciones": "Tomar en la manana con alimentos."},
+        ],
+    ),
+    _paciente_extra(
+        "3001016", "Brenda", "Choquehuanca", "Gironda", date(2001, 3, 27), "F",
+        "71235010", "Alto Irpavi, Calle 12 #34, La Paz", "CNS", "CNS-SP-016", "AYMARA",
+        {
+            "grupo_sanguineo": "A+", "alergias": "Niquel (dermatitis de contacto)",
+            "ant_patologicos": "Dermatitis atopica leve en infancia", "ant_no_patologicos": "Trabaja con productos de limpieza.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Madre con alergias cutaneas.",
+            "ant_gineco_obstetricos": "G0P0A0C0.", "medicacion_actual": "Ninguna", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "60.0", "talla_cm": "161.0", "frecuencia_cardiaca": 76, "frecuencia_respiratoria": 17,
+         "presion_sistolica": 112, "presion_diastolica": 72, "temperatura_celsius": "36.4", "saturacion_oxigeno": 99,
+         "escala_dolor": 4, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Erupcion cutanea con picazon en manos desde hace 4 dias, relacionada con uso de guantes de limpieza.",
+         "observaciones": "Lesiones eritematosas localizadas en dorso de manos, sin signos de infeccion."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Erupcion pruriginosa en manos de 4 dias de evolucion.",
+         "historia_enfermedad_actual": "Mujer de 25 anos con antecedente de dermatitis atopica leve acude por placas eritematosas y pruriginosas en dorso de ambas manos de 4 dias de evolucion, coincidiendo con uso frecuente de guantes de limpieza en el trabajo. Niega fiebre ni lesiones en otras zonas.",
+         "examen_fisico": "Placas eritemato-descamativas bien delimitadas en dorso de manos, sin vesiculas activas ni signos de sobreinfeccion.",
+         "impresion_diagnostica": "Dermatitis de contacto irritativa/alergica en manos.",
+         "codigo_cie10_principal": "L23.9", "descripcion_cie10": "Dermatitis alergica de contacto, causa no especificada",
+         "plan_tratamiento": "1. Betametasona crema topica c/12h por 7 dias\n2. Loratadina 10mg c/dia SOS picazon\n3. Evitar contacto directo con productos de limpieza, usar guantes de algodon bajo los de goma\n4. Emolientes despues del lavado de manos",
+         "indicaciones_alta": "Evitar el alergeno identificado. Usar guantes protectores dobles en el trabajo. Reconsultar si empeora o se sobreinfecta.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Betametasona", "concentracion": "0.05%", "forma_farmaceutica": "crema", "via_administracion": "TOP",
+             "dosis": "capa fina", "frecuencia": "cada 12 horas", "duracion": "7 dias", "cantidad_total": "1 tubo 30g",
+             "instrucciones": "Aplicar solo en zonas afectadas.", "orden": 1},
+            {"medicamento": "Loratadina", "concentracion": "10mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "una vez al dia", "duracion": "7 dias", "cantidad_total": "7 tabletas",
+             "instrucciones": "Puede causar somnolencia leve."},
+        ],
+    ),
+    _paciente_extra(
+        "3001017", "Norah", "Sanchez", "Villca", date(1988, 10, 11), "F",
+        "71235011", "Sopocachi, Calle Rosendo Gutierrez 200, La Paz", "PRIVADO", "PRIV-SP-017", "MESTIZO",
+        {
+            "grupo_sanguineo": "AB+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Trastorno de ansiedad generalizada desde 2021", "ant_no_patologicos": "Trabajo de alta demanda laboral.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Madre con depresion.",
+            "ant_gineco_obstetricos": "G1P1A0C0.", "medicacion_actual": "Ninguna regular actualmente.",
+            "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "64.0", "talla_cm": "165.0", "frecuencia_cardiaca": 102, "frecuencia_respiratoria": 22,
+         "presion_sistolica": 134, "presion_diastolica": 86, "temperatura_celsius": "36.5", "saturacion_oxigeno": 98,
+         "escala_dolor": 2, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Palpitaciones, opresion en el pecho y sensacion de falta de aire de inicio subito hace 1 hora, sin dolor toracico tipico.",
+         "observaciones": "ECG normal. Cuadro compatible con crisis de ansiedad. Sin hallazgos cardiologicos."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Episodio de palpitaciones y disnea subjetiva, sin causa organica evidente.",
+         "historia_enfermedad_actual": "Mujer de 37 anos con ansiedad generalizada conocida acude por episodio de palpitaciones, opresion toracica y sensacion de falta de aire de inicio subito, en contexto de estres laboral intenso. ECG y signos vitales sin alteraciones significativas que expliquen el cuadro.",
+         "examen_fisico": "FC 102 lpm sinusal en ECG. Auscultacion cardiopulmonar normal. Paciente ansiosa, taquipneica leve, sin signos de organicidad.",
+         "impresion_diagnostica": "Crisis de ansiedad en paciente con trastorno de ansiedad generalizada conocido.",
+         "codigo_cie10_principal": "F41.1", "descripcion_cie10": "Trastorno de ansiedad generalizada",
+         "plan_tratamiento": "1. Tecnicas de respiracion controlada en consulta\n2. Reiniciar Sertralina 50mg c/dia\n3. Derivar a psicologia/psiquiatria para seguimiento\n4. Evitar cafeina y estimulantes",
+         "indicaciones_alta": "Retomar seguimiento en salud mental. Tecnicas de manejo de estres. Reconsultar si dolor toracico tipico o sincope.", "requiere_derivacion": True,
+         "derivacion_destino": "Psiquiatria — Consulta externa", "derivacion_motivo": "Trastorno de ansiedad generalizada con crisis recurrentes, requiere seguimiento especializado."},
+        receta=[
+            {"medicamento": "Sertralina", "concentracion": "50mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "una vez al dia", "duracion": "30 dias", "cantidad_total": "30 tabletas",
+             "instrucciones": "Tomar en la manana. No suspender abruptamente."},
+        ],
+    ),
+    _paciente_extra(
+        "3001018", "Marcelo", "Fernandez", "Ramos", date(1953, 7, 8), "M",
+        "71235012", "Obrajes, Calle 8 #45, La Paz", "COSSMIL", "COS-SP-018", "MESTIZO",
+        {
+            "grupo_sanguineo": "O+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Artrosis de rodilla bilateral desde 2017", "ant_no_patologicos": "Ex-jugador de futbol amateur.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Madre con artrosis.",
+            "ant_gineco_obstetricos": "", "medicacion_actual": "Paracetamol SOS", "esquema_vacunacion": "Influenza anual. Neumococo (2023).",
+        },
+        {"peso_kg": "86.0", "talla_cm": "170.0", "frecuencia_cardiaca": 74, "frecuencia_respiratoria": 17,
+         "presion_sistolica": 138, "presion_diastolica": 84, "temperatura_celsius": "36.3", "saturacion_oxigeno": 97,
+         "escala_dolor": 6, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Dolor progresivo en ambas rodillas que dificulta subir escaleras desde hace varias semanas.",
+         "observaciones": "Crepitacion articular bilateral. Sin signos de derrame ni inflamacion aguda."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Gonalgia bilateral cronica agudizada, limitante para subir escaleras.",
+         "historia_enfermedad_actual": "Varon de 72 anos con artrosis de rodilla bilateral conocida acude por dolor progresivo 6/10 en ambas rodillas, de varias semanas de evolucion, que limita la marcha en escaleras y le interrumpe el sueno. Usa paracetamol SOS con alivio parcial.",
+         "examen_fisico": "Crepitacion articular bilateral a la flexo-extension. Leve aumento de volumen sin signos inflamatorios agudos. Marcha antalgica.",
+         "impresion_diagnostica": "Artrosis de rodilla bilateral, reagudizacion del dolor cronico.",
+         "codigo_cie10_principal": "M17.9", "descripcion_cie10": "Gonartrosis no especificada",
+         "plan_tratamiento": "1. Diclofenaco 50mg c/12h por 10 dias con proteccion gastrica\n2. Fisioterapia y ejercicios de fortalecimiento de cuadriceps\n3. Reduccion de peso si aplica\n4. Considerar evaluacion por ortopedia para manejo a largo plazo",
+         "indicaciones_alta": "Evitar cargar peso excesivo. Iniciar fisioterapia. Control en 1 mes o antes si empeora.", "requiere_derivacion": True,
+         "derivacion_destino": "Traumatologia/Ortopedia", "derivacion_motivo": "Artrosis bilateral avanzada, evaluar manejo quirurgico a futuro."},
+        receta=[
+            {"medicamento": "Diclofenaco", "concentracion": "50mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "cada 12 horas", "duracion": "10 dias", "cantidad_total": "20 tabletas",
+             "instrucciones": "Tomar con alimentos. Combinar con proteccion gastrica."},
+        ],
+        orden_estudio={"tipo": "RX", "descripcion": "Radiografia de ambas rodillas AP y lateral en carga",
+                       "indicacion_clinica": "Artrosis de rodilla bilateral sintomatica, evaluar grado radiologico de la lesion."},
+    ),
+    _paciente_extra(
+        "3001019", "Yolanda", "Coro", "Mamani", date(1979, 2, 2), "F",
+        "71235013", "Munaypata, Calle 5 #21, La Paz", "SUS", "", "AYMARA",
+        {
+            "grupo_sanguineo": "O+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Anemia ferropenica diagnosticada hace 1 mes", "ant_no_patologicos": "Dieta baja en hierro. Vegetariana.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Sin antecedentes relevantes.",
+            "ant_gineco_obstetricos": "G2P2A0C0. Menstruaciones abundantes.",
+            "medicacion_actual": "Ninguna actualmente.", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "58.0", "talla_cm": "157.0", "frecuencia_cardiaca": 96, "frecuencia_respiratoria": 19,
+         "presion_sistolica": 108, "presion_diastolica": 68, "temperatura_celsius": "36.3", "saturacion_oxigeno": 97,
+         "escala_dolor": 0, "nivel_urgencia": "VERDE",
+         "motivo_consulta_triaje": "Cansancio facil, palidez y mareos ocasionales desde hace 3 semanas.",
+         "observaciones": "Palidez de mucosas evidente. Pendiente resultado de laboratorio reciente."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Astenia y palidez con sospecha de anemia ferropenica.",
+         "historia_enfermedad_actual": "Mujer de 47 anos vegetariana con menstruaciones abundantes refiere fatiga progresiva, palidez y mareos ocasionales de 3 semanas de evolucion. Laboratorio reciente muestra hemoglobina 9.2 g/dL con indices microciticos hipocromicos.",
+         "examen_fisico": "Palidez cutaneo-mucosa marcada. FC 96 lpm. Sin soplos cardiacos significativos. Resto del examen sin alteraciones.",
+         "impresion_diagnostica": "Anemia ferropenica, probablemente por perdidas menstruales y dieta baja en hierro.",
+         "codigo_cie10_principal": "D50.9", "descripcion_cie10": "Anemia por deficiencia de hierro, sin especificar",
+         "plan_tratamiento": "1. Sulfato ferroso 300mg c/dia por 3 meses\n2. Suplementacion con vitamina C para mejorar absorcion\n3. Evaluacion ginecologica por menstruaciones abundantes\n4. Control de hemograma en 6 semanas",
+         "indicaciones_alta": "Tomar el hierro alejado de te/cafe y lacteos. Incluir alimentos ricos en hierro en la dieta. Control en 6 semanas.", "requiere_derivacion": True,
+         "derivacion_destino": "Ginecologia", "derivacion_motivo": "Menstruaciones abundantes como probable causa de la anemia ferropenica."},
+        receta=[
+            {"medicamento": "Sulfato ferroso", "concentracion": "300mg", "forma_farmaceutica": "tableta", "via_administracion": "VO",
+             "dosis": "1 tableta", "frecuencia": "una vez al dia", "duracion": "90 dias", "cantidad_total": "90 tabletas",
+             "instrucciones": "Tomar alejado de lacteos, te o cafe."},
+        ],
+        orden_estudio={"tipo": "LAB", "descripcion": "Hemograma completo, ferritina y perfil de hierro",
+                       "indicacion_clinica": "Confirmacion y seguimiento de anemia ferropenica de probable origen menstrual y dietetico."},
+    ),
+    _paciente_extra(
+        "3001020", "Freddy", "Villca", "Gironda", date(2004, 6, 15), "M",
+        "71235014", "Tembladerani, Calle 2 #9, La Paz", "SUS", "", "MESTIZO",
+        {
+            "grupo_sanguineo": "B+", "alergias": "Sin alergias conocidas",
+            "ant_patologicos": "Sin antecedentes patologicos previos", "ant_no_patologicos": "Estudiante. No fuma, no alcohol.",
+            "ant_quirurgicos": "Ninguno", "ant_familiares": "Sin antecedentes relevantes.",
+            "ant_gineco_obstetricos": "", "medicacion_actual": "Ninguna", "esquema_vacunacion": "Esquema completo.",
+        },
+        {"peso_kg": "65.0", "talla_cm": "174.0", "frecuencia_cardiaca": 100, "frecuencia_respiratoria": 20,
+         "presion_sistolica": 110, "presion_diastolica": 70, "temperatura_celsius": "37.8", "saturacion_oxigeno": 98,
+         "escala_dolor": 4, "nivel_urgencia": "AMARILLO",
+         "motivo_consulta_triaje": "Diarrea acuosa y vomitos desde anoche, asociado a dolor abdominal tipo colico.",
+         "observaciones": "Signos de deshidratacion leve. Tolera liquidos por via oral."},
+        {"estado": "COMPLETADA", "motivo_consulta": "Diarrea acuosa y vomitos de inicio agudo con dolor abdominal tipo colico.",
+         "historia_enfermedad_actual": "Varon de 21 anos previamente sano acude por diarrea acuosa abundante (6 episodios) y 2 episodios de vomito desde anoche, con dolor abdominal tipo colico difuso. Refiere haber comido en la calle el dia anterior. Niega sangre en heces.",
+         "examen_fisico": "T: 37.8C. Mucosas semihumedas. Abdomen blando, doloroso difusamente sin signos de irritacion peritoneal. Ruidos hidroaereos aumentados.",
+         "impresion_diagnostica": "Gastroenteritis aguda probablemente infecciosa, deshidratacion leve.",
+         "codigo_cie10_principal": "A09", "descripcion_cie10": "Diarrea y gastroenteritis de presunto origen infeccioso",
+         "plan_tratamiento": "1. Sales de rehidratacion oral tras cada deposicion liquida\n2. Dieta astringente, evitar lacteos y grasas\n3. Loperamida SOS solo si no hay fiebre alta ni sangre en heces\n4. Reconsultar si fiebre alta persistente, sangre en heces o signos de deshidratacion severa",
+         "indicaciones_alta": "Hidratacion oral abundante. Dieta blanda progresiva. Reconsultar si empeora.", "requiere_derivacion": False},
+        receta=[
+            {"medicamento": "Sales de rehidratacion oral", "concentracion": "estandar OMS", "forma_farmaceutica": "sobre", "via_administracion": "VO",
+             "dosis": "1 sobre disuelto en 1L de agua", "frecuencia": "segun tolerancia tras cada deposicion", "duracion": "hasta resolucion",
+             "cantidad_total": "10 sobres", "instrucciones": "Tomar a sorbos pequenos y frecuentes."},
+        ],
+    ),
+]
+
+CLINICAS[0]["pacientes"].extend(_PACIENTES_EXTRA_SAN_PABLO)
+
+
+# ---------------------------------------------------------------------------
 # COMMAND
 # ---------------------------------------------------------------------------
 
@@ -1305,13 +1754,54 @@ class Command(BaseCommand):
                         profesional_apertura=ps_apertura,
                         estado=Ficha.Estado.CERRADA,
                     )
-                Consulta.objects.get_or_create(
+                receta_data = c_data.get("receta")
+                orden_data = c_data.get("orden_estudio")
+                consulta_kwargs = {
+                    k: v for k, v in c_data.items()
+                    if k not in ("codigo_cie10_principal", "receta", "orden_estudio")
+                }
+                consulta, c_created = Consulta.objects.get_or_create(
                     ficha=ficha_asoc,
                     codigo_cie10_principal=c_data["codigo_cie10_principal"],
                     defaults={
                         "tenant": tenant,
                         "medico": medico,
                         "triaje": triaje_asoc,
-                        **{k: v for k, v in c_data.items() if k != "codigo_cie10_principal"},
+                        **consulta_kwargs,
                     },
                 )
+                if c_created and receta_data:
+                    self._crear_receta(consulta, medico, receta_data)
+                if c_created and orden_data:
+                    self._crear_orden_estudio(consulta, ps_apertura, orden_data)
+
+    # ------------------------------------------------------------------
+    def _crear_receta(self, consulta, medico, detalles_data):
+        receta, created = Receta.objects.get_or_create(
+            consulta=consulta,
+            defaults={
+                "medico": medico,
+                "numero_receta": f"REC-{consulta.tenant_id}-{consulta.pk:06d}",
+            },
+        )
+        if not created:
+            return
+        for orden, det in enumerate(detalles_data, start=1):
+            campos = {k: v for k, v in det.items() if k != "orden"}
+            DetalleReceta.objects.create(receta=receta, orden=det.get("orden", orden), **campos)
+
+    # ------------------------------------------------------------------
+    def _crear_orden_estudio(self, consulta, ps_solicitante, orden_data):
+        if not ps_solicitante:
+            return
+        OrdenEstudio.objects.get_or_create(
+            consulta=consulta,
+            tipo=orden_data["tipo"],
+            defaults={
+                "descripcion": orden_data["descripcion"],
+                "indicacion_clinica": orden_data["indicacion_clinica"],
+                "urgente": orden_data.get("urgente", False),
+                "motivo_urgencia": orden_data.get("motivo_urgencia", ""),
+                "medico_solicitante": ps_solicitante,
+            },
+        )

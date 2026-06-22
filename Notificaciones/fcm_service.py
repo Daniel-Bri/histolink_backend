@@ -21,16 +21,24 @@ def _get_app():
         import firebase_admin # type: ignore
         from firebase_admin import credentials # type: ignore
 
-        cred_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "kardex",
-            "firebase_credentials.json",
-        )
-        if not os.path.exists(cred_path):
-            logger.warning("[FCM] Archivo de credenciales no encontrado en %s", cred_path)
-            return None
+        # En Railway no hay forma de subir un archivo via git (esta en .gitignore),
+        # asi que las credenciales se pasan como JSON crudo en una variable de entorno.
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+        if cred_json:
+            cred = credentials.Certificate(json.loads(cred_json))
+        else:
+            cred_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "kardex",
+                "firebase_credentials.json",
+            )
+            if not os.path.exists(cred_path):
+                logger.warning(
+                    "[FCM] Sin credenciales: ni FIREBASE_CREDENTIALS_JSON ni %s existen.", cred_path
+                )
+                return None
+            cred = credentials.Certificate(cred_path)
 
-        cred = credentials.Certificate(cred_path)
         _app = firebase_admin.initialize_app(cred)
         logger.info("[FCM] Firebase Admin SDK inicializado correctamente")
     except Exception as exc:
