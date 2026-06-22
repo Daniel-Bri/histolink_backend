@@ -22,8 +22,8 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from drf_spectacular.types import OpenApiTypes # type: ignore
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema # type: ignore
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
